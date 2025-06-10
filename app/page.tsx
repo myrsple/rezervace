@@ -10,10 +10,10 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-blue-700 mb-4">
             Ryby Semín
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-            Sportovní rybolov na vodní nádrži Tomášek, zasazený do krásné přírody nedaleko Přelouče. 
-            Nabízíme 15 prémiových lovných míst s flexibilní dobou rezervace.
-          </p>
+                      <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+              Sportovní rybolov na vodní nádrži Tomášek, zasazený do krásné přírody nedaleko Přelouče. 
+              Nabízíme 16 lovných míst s flexibilní dobou rezervace a pořádáme pravidelné závody.
+            </p>
           {/* Info Cards Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
             <div className="bg-white rounded-xl shadow-soft p-5 text-left">

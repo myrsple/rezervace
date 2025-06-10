@@ -14,10 +14,8 @@ export async function GET() {
     return NextResponse.json(reservations)
   } catch (error) {
     console.error('Error fetching reservations:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch reservations' },
-      { status: 500 }
-    )
+    // Return empty array instead of error response
+    return NextResponse.json([])
   }
 }
 
@@ -36,6 +34,14 @@ export async function POST(request: NextRequest) {
       rentedGear,
       gearPrice
     } = body
+
+    // Validate required fields
+    if (!spotId || !customerName || !customerEmail || !customerPhone || !startDate || !duration || !totalPrice) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
 
     // Calculate end date based on duration
     let endDate: Date
@@ -67,7 +73,10 @@ export async function POST(request: NextRequest) {
         }
         break
       default:
-        throw new Error('Invalid duration')
+        return NextResponse.json(
+          { error: 'Invalid duration' },
+          { status: 400 }
+        )
     }
 
     // Check for conflicts
@@ -137,7 +146,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(reservation, { status: 201 })
+    return NextResponse.json(reservation)
   } catch (error) {
     console.error('Error creating reservation:', error)
     return NextResponse.json(

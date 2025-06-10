@@ -43,15 +43,32 @@ export default function AdminDashboard() {
         fetch('/api/competitions')
       ])
 
-      const reservationsData = await reservationsRes.json()
-      const spotsData = await spotsRes.json()
-      const competitionsData = await competitionsRes.json()
+      if (!reservationsRes.ok) {
+        throw new Error(`Reservations API error: ${reservationsRes.status}`)
+      }
+      if (!spotsRes.ok) {
+        throw new Error(`Fishing spots API error: ${spotsRes.status}`)
+      }
+      if (!competitionsRes.ok) {
+        throw new Error(`Competitions API error: ${competitionsRes.status}`)
+      }
 
-      setReservations(reservationsData)
-      setFishingSpots(spotsData)
-      setCompetitions(competitionsData)
+      const [reservationsData, spotsData, competitionsData] = await Promise.all([
+        reservationsRes.json(),
+        spotsRes.json(),
+        competitionsRes.json()
+      ])
+
+      // Ensure we have arrays even if the API returns undefined
+      setReservations(Array.isArray(reservationsData) ? reservationsData : [])
+      setFishingSpots(Array.isArray(spotsData) ? spotsData : [])
+      setCompetitions(Array.isArray(competitionsData) ? competitionsData : [])
     } catch (error) {
       console.error('Error fetching data:', error)
+      // Set empty arrays as fallback
+      setReservations([])
+      setFishingSpots([])
+      setCompetitions([])
     } finally {
       setLoading(false)
     }

@@ -51,6 +51,9 @@ model Reservation {
   rentedGear String? // e.g., "rod_reel,tackle_box,chair"
   gearPrice  Float?  @default(0) // Total price for rented gear
   
+  // Additional information
+  notes      String? // Optional notes for the reservation
+  
   // Timestamps
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

@@ -47,32 +47,28 @@ export async function warmupDatabase() {
 
 export async function withDatabaseWarmup<T>(operation: () => Promise<T>): Promise<T> {
   try {
-    // Try to warm up first
-    if (!isWarmedUp) {
-      await warmupDatabase()
-    }
-    
-    // Execute the actual operation with retries
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        return await operation()
-      } catch (error) {
-        if (attempt < 2) {
-          console.warn(`Operation failed on attempt ${attempt + 1}, retrying...`, error)
-          // Reset warmup status on connection errors
-          if (error instanceof Error && error.message.includes('connection')) {
-            isWarmedUp = false
-            await warmupDatabase()
-          }
-          await new Promise(res => setTimeout(res, 1000 * (attempt + 1)))
-        } else {
-          throw error
-        }
-      }
-    }
-    throw new Error('All retry attempts failed')
+    // Try the operation first
+    return await operation()
   } catch (error) {
-    console.error('Operation failed after all retries:', error)
-    throw error
+    console.error('Database operation failed, attempting warmup:', error)
+    
+    try {
+      // Attempt to warm up the database
+      await prisma.$connect()
+      
+      // Try the operation again
+      const result = await operation()
+      if (result === undefined || result === null) {
+        throw new Error('Operation returned undefined or null')
+      }
+      return result
+    } catch (warmupError) {
+      console.error('Database warmup failed:', warmupError)
+      // Return a safe default value based on the expected type
+      if (Array.isArray(await operation())) {
+        return [] as T
+      }
+      throw warmupError
+    }
   }
 } 

@@ -166,16 +166,49 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(reservation)
     } catch (dbError) {
-      console.error('Database error creating reservation:', dbError)
+      // Enhanced error logging
+      console.error('Database error creating reservation. Details:', {
+        error: dbError,
+        requestData: {
+          spotId,
+          customerName,
+          customerEmail,
+          customerPhone,
+          startDate: startDateTime,
+          endDate,
+          duration,
+          startTime: duration === 'day' ? '6am' : startTime,
+          totalPrice,
+          rentedGear,
+          gearPrice
+        }
+      })
+      
+      // Check for specific Prisma errors
+      const prismaError = dbError as { code?: string }
+      if (prismaError.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'Duplicate reservation found' },
+          { status: 409 }
+        )
+      }
+      if (prismaError.code === 'P2003') {
+        return NextResponse.json(
+          { error: 'Invalid fishing spot ID' },
+          { status: 400 }
+        )
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to create reservation in database' },
+        { error: 'Failed to create reservation in database. Please try again.' },
         { status: 500 }
       )
     }
   } catch (error) {
-    console.error('Error creating reservation:', error)
+    // Enhanced general error logging
+    console.error('Unexpected error creating reservation:', error)
     return NextResponse.json(
-      { error: 'Failed to create reservation' },
+      { error: 'An unexpected error occurred. Please try again.' },
       { status: 500 }
     )
   }

@@ -5,19 +5,22 @@ import { prisma } from '../../../lib/prisma'
 export async function GET() {
   try {
     const spots = await withDatabaseWarmup(async () => {
-      return prisma.fishingSpot.findMany({
+      const result = await prisma.fishingSpot.findMany({
         orderBy: { number: 'asc' }
       })
+      return result || []
     })
     
-    // Ensure we always return an array, even if empty
-    return NextResponse.json(spots || [])
+    // Ensure we always return a valid array
+    if (!Array.isArray(spots)) {
+      console.error('Invalid spots data:', spots)
+      return NextResponse.json([], { status: 200 })
+    }
+    
+    return NextResponse.json(spots)
   } catch (error) {
     console.error('Error fetching fishing spots:', error)
-    // Return a properly formatted error response
-    return NextResponse.json(
-      { error: 'Failed to fetch fishing spots', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
+    // Always return a valid JSON response
+    return NextResponse.json([], { status: 200 })
   }
 } 

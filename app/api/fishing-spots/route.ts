@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { withDatabaseWarmup } from '../../../lib/db-warmup'
 import { prisma } from '../../../lib/prisma'
 
 export async function GET() {
   try {
-    const spots = await prisma.fishingSpot.findMany({
-      orderBy: { number: 'asc' }
+    const spots = await withDatabaseWarmup(async () => {
+      return prisma.fishingSpot.findMany({
+        orderBy: { number: 'asc' }
+      })
     })
     
     return NextResponse.json(spots)

@@ -21,6 +21,17 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Test database connection first
+    try {
+      await prisma.$queryRaw`SELECT 1`
+    } catch (connError) {
+      console.error('Database connection error:', connError)
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      )
+    }
+
     let body
     try {
       body = await request.json()
@@ -31,6 +42,14 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Log incoming request data (excluding sensitive info)
+    console.log('Incoming reservation request:', {
+      spotId: body.spotId,
+      startDate: body.startDate,
+      duration: body.duration,
+      startTime: body.startTime
+    })
 
     const {
       spotId,
@@ -46,9 +65,19 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validate required fields
-    if (!spotId || !customerName || !customerEmail || !customerPhone || !startDate || !duration || !totalPrice) {
+    const missingFields = []
+    if (!spotId) missingFields.push('spotId')
+    if (!customerName) missingFields.push('customerName')
+    if (!customerEmail) missingFields.push('customerEmail')
+    if (!customerPhone) missingFields.push('customerPhone')
+    if (!startDate) missingFields.push('startDate')
+    if (!duration) missingFields.push('duration')
+    if (!totalPrice) missingFields.push('totalPrice')
+
+    if (missingFields.length > 0) {
+      console.error('Missing required fields:', missingFields)
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
       )
     }
@@ -56,6 +85,7 @@ export async function POST(request: NextRequest) {
     // Validate date format
     const startDateTime = new Date(startDate)
     if (isNaN(startDateTime.getTime())) {
+      console.error('Invalid date format:', startDate)
       return NextResponse.json(
         { error: 'Invalid date format' },
         { status: 400 }
@@ -164,53 +194,78 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      return NextResponse.json(reservation)
+      // Ensure we have a valid response object
+      const responseData = {
+        ...reservation,
+        startDate: reservation.startDate.toISOString(),
+        endDate: reservation.endDate.toISOString(),
+        createdAt: reservation.createdAt.toISOString(),
+        updatedAt: reservation.updatedAt.toISOString(),
+        fishingSpot: {
+          ...reservation.fishingSpot,
+          createdAt: reservation.fishingSpot.createdAt.toISOString(),
+          updatedAt: reservation.fishingSpot.updatedAt.toISOString()
+        }
+      }
+
+      return new NextResponse(JSON.stringify(responseData), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
     } catch (dbError) {
       // Enhanced error logging
       console.error('Database error creating reservation. Details:', {
         error: dbError,
         requestData: {
           spotId,
-          customerName,
-          customerEmail,
-          customerPhone,
-          startDate: startDateTime,
-          endDate,
+          startDate: startDateTime?.toISOString(),
+          endDate: endDate?.toISOString(),
           duration,
-          startTime: duration === 'day' ? '6am' : startTime,
-          totalPrice,
-          rentedGear,
-          gearPrice
+          startTime: duration === 'day' ? '6am' : startTime
         }
       })
       
       // Check for specific Prisma errors
       const prismaError = dbError as { code?: string }
       if (prismaError.code === 'P2002') {
-        return NextResponse.json(
-          { error: 'Duplicate reservation found' },
-          { status: 409 }
-        )
+        return new NextResponse(JSON.stringify({ error: 'Duplicate reservation found' }), {
+          status: 409,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
       }
       if (prismaError.code === 'P2003') {
-        return NextResponse.json(
-          { error: 'Invalid fishing spot ID' },
-          { status: 400 }
-        )
+        return new NextResponse(JSON.stringify({ error: 'Invalid fishing spot ID' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
       }
       
-      return NextResponse.json(
-        { error: 'Failed to create reservation in database. Please try again.' },
-        { status: 500 }
-      )
+      return new NextResponse(JSON.stringify({ 
+        error: 'Failed to create reservation in database. Please try again.' 
+      }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
     }
   } catch (error) {
     // Enhanced general error logging
     console.error('Unexpected error creating reservation:', error)
-    return NextResponse.json(
-      { error: 'An unexpected error occurred. Please try again.' },
-      { status: 500 }
-    )
+    return new NextResponse(JSON.stringify({ 
+      error: 'An unexpected error occurred. Please try again.' 
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
   }
 }
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Competition } from '@/types'
-import { format } from 'date-fns'
+import { format, addHours, isBefore } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import CompetitionRegistration from './CompetitionRegistration'
 
@@ -19,8 +19,16 @@ export default function CompetitionSection() {
     try {
       const response = await fetch('/api/competitions')
       const data = await response.json()
-      // Only show active competitions
-      const activeCompetitions = data.filter((comp: Competition) => comp.isActive)
+      
+      // Filter out competitions that ended more than 48 hours ago
+      const now = new Date()
+      const activeCompetitions = data.filter((comp: Competition) => {
+        const competitionDate = new Date(comp.date)
+        const endDate = addHours(competitionDate, 24) // Competition ends 24h after start
+        const visibilityEndDate = addHours(endDate, 48) // Show for 48h after end
+        return comp.isActive && isBefore(now, visibilityEndDate)
+      })
+      
       setCompetitions(activeCompetitions)
     } catch (error) {
       console.error('Error fetching competitions:', error)
@@ -58,8 +66,6 @@ export default function CompetitionSection() {
       <p className="text-semin-gray mb-6">
         Přihlaste se na nadcházející rybářské závody na našem rybníku.
       </p>
-
-
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {competitions.map((competition) => {

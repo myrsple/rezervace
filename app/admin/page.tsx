@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Reservation, FishingSpot, Competition, CompetitionRegistration } from '@/types'
-import { format } from 'date-fns'
+import { format, addHours } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import { getGearNames } from '@/lib/gear-config'
 
@@ -234,10 +234,10 @@ export default function AdminDashboard() {
 
   const isCompetitionCompleted = (competition: Competition) => {
     const now = new Date()
-    const competitionEnd = new Date(competition.date)
-    competitionEnd.setHours(competitionEnd.getHours() + 24) // Competition ends 24 hours after start
-    const completedThreshold = new Date(competitionEnd.getTime() + 24 * 60 * 60 * 1000) // 24 hours after end
-    return now > completedThreshold
+    const competitionDate = new Date(competition.date)
+    const endDate = addHours(competitionDate, 24) // Competition ends 24h after start
+    const visibilityEndDate = addHours(endDate, 48) // Show for 48h after end
+    return now > visibilityEndDate
   }
 
   const getActiveCompetitions = () => {

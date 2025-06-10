@@ -263,27 +263,6 @@ export default function ReservationSystem() {
             Zbývá už jen potvrdit ✅
           </h2>
           
-          {/* Booking Summary */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h4 className="font-semibold text-blue-800 mb-2">Shrnutí rezervace</h4>
-            <div className="space-y-1 text-sm text-blue-700">
-              <div><strong>Datum:</strong> {format(selectedDate, 'EEEE, d. MMMM yyyy', { locale: cs })}</div>
-              <div><strong>Délka:</strong> {
-                selectedDuration === 'day' ? 'Jeden den (6:00 - 22:00)' :
-                selectedDuration === '24h' ? '24 hodin' : '48 hodin'
-              }</div>
-              {(selectedDuration === '24h' || selectedDuration === '48h') && (
-                <div><strong>Začátek:</strong> {
-                  selectedTimeSlot === 'morning' ? '6:00' : '18:00'
-                }</div>
-              )}
-              <div><strong>Místo:</strong> #{selectedSpot.number} - {selectedSpot.name}</div>
-              {weatherForecast && (
-                <div><strong>Počasí:</strong> {weatherForecast.description}, {weatherForecast.temperature}°C, vítr {weatherForecast.windSpeed} km/h</div>
-              )}
-            </div>
-          </div>
-          
           <BookingForm
             spot={selectedSpot}
             date={selectedDate}

@@ -13,7 +13,8 @@ import {
   endOfWeek,
   isBefore,
   startOfDay,
-  isToday
+  isToday,
+  addHours
 } from 'date-fns'
 import { cs } from 'date-fns/locale'
 
@@ -81,7 +82,10 @@ export default function ReservationCalendar({
     // Check if there's a competition on this date
     const hasCompetition = competitions.some(competition => {
       const competitionDate = startOfDay(new Date(competition.date))
-      return competitionDate.getTime() === dayStart.getTime()
+      const endDate = addHours(competitionDate, 24) // Competition ends 24h after start
+      const visibilityEndDate = addHours(endDate, 48) // Show for 48h after end
+      const now = new Date()
+      return competitionDate.getTime() === dayStart.getTime() && competition.isActive && isBefore(now, visibilityEndDate)
     })
 
     if (hasCompetition) {
@@ -145,7 +149,7 @@ export default function ReservationCalendar({
     isCurrentMonth: boolean,
     availability: 'available' | 'occupied' | 'partial' | 'competition'
   ): string => {
-    const baseClasses = "min-h-[120px] p-3 flex flex-col justify-between text-left transition-all duration-200"
+    const baseClasses = "min-h-[90px] p-2 flex flex-col justify-between text-left transition-all duration-200 text-sm"
 
     if (!isCurrentMonth) {
       return `${baseClasses} bg-gray-50/50 text-gray-300 cursor-not-allowed`
@@ -171,7 +175,7 @@ export default function ReservationCalendar({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold text-semin-blue">
           {format(monthStart, 'MMMM yyyy', { locale: cs })} • Lovné místo {spot.number}
@@ -187,7 +191,7 @@ export default function ReservationCalendar({
           </button>
           <button 
             onClick={() => setCurrentDate(new Date())} 
-            className="px-4 py-2 text-sm font-medium text-semin-blue bg-semin-blue/10 rounded-xl hover:bg-semin-blue/20 transition-colors"
+            className="px-3 py-1.5 text-sm font-medium text-semin-blue bg-semin-blue/10 rounded-xl hover:bg-semin-blue/20 transition-colors"
           >
             Dnes
           </button>
@@ -202,30 +206,30 @@ export default function ReservationCalendar({
         </div>
       </div>
 
-      <div className="flex justify-end space-x-6 text-sm">
+      <div className="flex justify-end space-x-4 text-xs">
         <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-green-100 ring-1 ring-green-200 mr-2"></div>
+          <div className="w-2.5 h-2.5 rounded-full bg-green-100 ring-1 ring-green-200 mr-1.5"></div>
           <span className="text-gray-600">Volné</span>
         </div>
         <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-red-100 ring-1 ring-red-200 mr-2"></div>
+          <div className="w-2.5 h-2.5 rounded-full bg-red-100 ring-1 ring-red-200 mr-1.5"></div>
           <span className="text-gray-600">Obsazené</span>
         </div>
         <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-yellow-100 ring-1 ring-yellow-200 mr-2"></div>
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-100 ring-1 ring-yellow-200 mr-1.5"></div>
           <span className="text-gray-600">Částečně</span>
         </div>
         <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-purple-100 ring-1 ring-purple-200 mr-2"></div>
+          <div className="w-2.5 h-2.5 rounded-full bg-purple-100 ring-1 ring-purple-200 mr-1.5"></div>
           <span className="text-gray-600">Závod</span>
         </div>
       </div>
 
-      <div className="rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100">
+      <div className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-100">
         {/* Calendar Header */}
         <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-100">
           {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(day => (
-            <div key={day} className="py-3 text-sm font-medium text-gray-600 text-center">
+            <div key={day} className="py-2 text-xs font-medium text-gray-600 text-center">
               {day}
             </div>
           ))}
@@ -251,23 +255,15 @@ export default function ReservationCalendar({
                 <div className="flex items-center justify-between">
                   <div className={`font-medium ${
                     isToday(date) 
-                      ? 'bg-semin-blue text-white w-7 h-7 rounded-full flex items-center justify-center' 
+                      ? 'bg-semin-blue text-white w-6 h-6 rounded-full flex items-center justify-center text-xs' 
                       : ''
                   }`}>
                     {format(date, 'd')}
                   </div>
                   {isCurrentMonth && weather && (
-                    <div className="text-2xl">{weather.icon}</div>
+                    <div className="text-xl">{weather.icon}</div>
                   )}
                 </div>
-                {isCurrentMonth && weather && (
-                  <div className="text-right">
-                    <p className="text-xs font-medium text-gray-600">{weather.temperature}°C</p>
-                  </div>
-                )}
-                {isCurrentMonth && loadingWeather[dateKey] && (
-                  <div className="w-4 h-4 border-2 border-semin-blue/20 border-t-semin-blue rounded-full animate-spin mx-auto mt-2"></div>
-                )}
               </button>
             )
           })}

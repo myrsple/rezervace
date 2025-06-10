@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FishingSpot {
+  id           Int           @id @default(autoincrement())
+  number       Int           @unique
+  name         String
+  description  String?
+  isActive     Boolean       @default(true)
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Reservation {
+  id          String      @id @default(cuid())
+  fishingSpot FishingSpot @relation(fields: [spotId], references: [id])
+  spotId      Int
+  
+  // Customer information
+  customerName  String
+  customerEmail String
+  customerPhone String
+  
+  // Booking details
+  startDate     DateTime
+  endDate       DateTime
+  duration      String // "24h", "48h", "day"
+  startTime     String // "morning", "evening", "6am" (for day bookings)
+  
+  // Pricing
+  totalPrice    Float
+  
+  // Status
+  status        String @default("CONFIRMED")
+  isPaid        Boolean @default(false) // Payment status for admin tracking
+  
+  // Payment
+  variableSymbol String? // 6-digit payment reference number
+  
+  // Gear Rental (comma-separated list of rented gear)
+  rentedGear String? // e.g., "rod_reel,tackle_box,chair"
+  gearPrice  Float?  @default(0) // Total price for rented gear
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Admin {
+  id        String @id @default(cuid())
+  email     String @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Competition {
+  id            Int                       @id @default(autoincrement())
+  name          String
+  date          DateTime
+  capacity      Int
+  entryFee      Float                     @default(0) // Entry fee in CZK
+  isActive      Boolean                   @default(true)
+  registrations CompetitionRegistration[]
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+}
+
+model CompetitionRegistration {
+  id            String      @id @default(cuid())
+  competition   Competition @relation(fields: [competitionId], references: [id])
+  competitionId Int
+  
+  // Customer information
+  customerName  String
+  customerEmail String
+  customerPhone String
+  
+  // Pricing
+  totalPrice    Float       // Entry fee + gear rental
+  
+  // Status
+  isPaid        Boolean @default(false) // Payment status for admin tracking
+  
+  // Payment
+  variableSymbol String?    // 6-digit payment reference number
+  
+  // Gear Rental (comma-separated list of rented gear)
+  rentedGear    String?     // e.g., "rod_reel,tackle_box,chair"
+  gearPrice     Float?      @default(0) // Total price for rented gear
+  
+  // Registration details
+  registeredAt  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Note: SQLite doesn't support enums, so we use String with validation in the app
+// Valid values: "CONFIRMED", "CANCELLED" 

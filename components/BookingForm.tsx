@@ -96,11 +96,27 @@ export default function BookingForm({
         }),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        const errorMessage = data.error || 'Rezervace se nezdařila'
+        let errorMessage = 'Rezervace se nezdařila'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (jsonError) {
+          console.error('Error parsing error response:', jsonError)
+        }
         throw new Error(errorMessage)
+      }
+
+      let data
+      try {
+        data = await response.json()
+      } catch (jsonError) {
+        console.error('Error parsing success response:', jsonError)
+        throw new Error('Nepodařilo se zpracovat odpověď ze serveru')
+      }
+
+      if (!data || typeof data !== 'object') {
+        throw new Error('Neplatná odpověď ze serveru')
       }
 
       setReservationData(data)

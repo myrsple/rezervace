@@ -21,7 +21,17 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (error) {
+      console.error('Error parsing request body:', error)
+      return NextResponse.json(
+        { error: 'Invalid request format' },
+        { status: 400 }
+      )
+    }
+
     const {
       spotId,
       customerName,
@@ -43,10 +53,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate date format
+    const startDateTime = new Date(startDate)
+    if (isNaN(startDateTime.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid date format' },
+        { status: 400 }
+      )
+    }
+
     // Calculate end date based on duration
     let endDate: Date
-    const startDateTime = new Date(startDate)
-
     switch (duration) {
       case 'day':
         // Single day booking: same day but different end time
@@ -124,29 +141,37 @@ export async function POST(request: NextRequest) {
     // Generate 6-digit variable symbol for payment
     const variableSymbol = Math.floor(100000 + Math.random() * 900000).toString()
 
-    // Create the reservation
-    const reservation = await prisma.reservation.create({
-      data: {
-        spotId,
-        customerName,
-        customerEmail,
-        customerPhone,
-        startDate: startDateTime,
-        endDate,
-        duration,
-        startTime: duration === 'day' ? '6am' : startTime,
-        totalPrice,
-        status: 'CONFIRMED',
-        variableSymbol,
-        rentedGear: rentedGear || null,
-        gearPrice: gearPrice || null
-      },
-      include: {
-        fishingSpot: true
-      }
-    })
+    try {
+      // Create the reservation
+      const reservation = await prisma.reservation.create({
+        data: {
+          spotId,
+          customerName,
+          customerEmail,
+          customerPhone,
+          startDate: startDateTime,
+          endDate,
+          duration,
+          startTime: duration === 'day' ? '6am' : startTime,
+          totalPrice,
+          status: 'CONFIRMED',
+          variableSymbol,
+          rentedGear: rentedGear || null,
+          gearPrice: gearPrice || null
+        },
+        include: {
+          fishingSpot: true
+        }
+      })
 
-    return NextResponse.json(reservation)
+      return NextResponse.json(reservation)
+    } catch (dbError) {
+      console.error('Database error creating reservation:', dbError)
+      return NextResponse.json(
+        { error: 'Failed to create reservation in database' },
+        { status: 500 }
+      )
+    }
   } catch (error) {
     console.error('Error creating reservation:', error)
     return NextResponse.json(

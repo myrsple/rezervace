@@ -22,9 +22,25 @@ export default function CompetitionSection() {
     try {
       const response = await fetch('/api/competitions')
       if (!response.ok) {
-        throw new Error('Failed to fetch competitions')
+        console.error('Failed to fetch competitions:', response.status)
+        setError(true)
+        return
       }
-      const data = await response.json()
+
+      let data
+      try {
+        data = await response.json()
+      } catch (error) {
+        console.error('Error parsing competitions data:', error)
+        setError(true)
+        return
+      }
+
+      if (!Array.isArray(data)) {
+        console.error('Invalid competitions data format')
+        setError(true)
+        return
+      }
       
       // Only show upcoming competitions
       const now = new Date()

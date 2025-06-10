@@ -43,6 +43,7 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
+      setLoading(true)
       const [reservationsRes, spotsRes, competitionsRes] = await Promise.all([
         fetch('/api/reservations'),
         fetch('/api/fishing-spots'),
@@ -54,40 +55,46 @@ export default function AdminDashboard() {
       let spotsData = []
       let competitionsData = []
 
-      try {
-        if (!reservationsRes.ok) {
-          throw new Error(`Reservations API error: ${reservationsRes.status}`)
-        }
-        reservationsData = await reservationsRes.json()
-      } catch (error) {
-        console.error('Error fetching reservations:', error)
+      if (!reservationsRes.ok) {
+        console.error('Reservations API error:', reservationsRes.status)
         showFeedback('error', 'Nepodařilo se načíst rezervace')
+      } else {
+        try {
+          const data = await reservationsRes.json()
+          reservationsData = Array.isArray(data) ? data : []
+        } catch (error) {
+          console.error('Error parsing reservations data:', error)
+        }
       }
 
-      try {
-        if (!spotsRes.ok) {
-          throw new Error(`Fishing spots API error: ${spotsRes.status}`)
-        }
-        spotsData = await spotsRes.json()
-      } catch (error) {
-        console.error('Error fetching fishing spots:', error)
+      if (!spotsRes.ok) {
+        console.error('Fishing spots API error:', spotsRes.status)
         showFeedback('error', 'Nepodařilo se načíst lovná místa')
-      }
-
-      try {
-        if (!competitionsRes.ok) {
-          throw new Error(`Competitions API error: ${competitionsRes.status}`)
+      } else {
+        try {
+          const data = await spotsRes.json()
+          spotsData = Array.isArray(data) ? data : []
+        } catch (error) {
+          console.error('Error parsing fishing spots data:', error)
         }
-        competitionsData = await competitionsRes.json()
-      } catch (error) {
-        console.error('Error fetching competitions:', error)
-        showFeedback('error', 'Nepodařilo se načíst závody')
       }
 
-      // Ensure we have arrays even if the API returns undefined
-      setReservations(Array.isArray(reservationsData) ? reservationsData : [])
-      setFishingSpots(Array.isArray(spotsData) ? spotsData : [])
-      setCompetitions(Array.isArray(competitionsData) ? competitionsData : [])
+      if (!competitionsRes.ok) {
+        console.error('Competitions API error:', competitionsRes.status)
+        showFeedback('error', 'Nepodařilo se načíst závody')
+      } else {
+        try {
+          const data = await competitionsRes.json()
+          competitionsData = Array.isArray(data) ? data : []
+        } catch (error) {
+          console.error('Error parsing competitions data:', error)
+        }
+      }
+
+      // Update state with the data we have
+      setReservations(reservationsData)
+      setFishingSpots(spotsData)
+      setCompetitions(competitionsData)
     } catch (error) {
       console.error('Error fetching data:', error)
       showFeedback('error', 'Nepodařilo se načíst data')

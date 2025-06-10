@@ -8,11 +8,20 @@ export async function warmupDatabase() {
   }
 
   try {
-    // Simple query to establish connection
-    await prisma.$queryRaw`SELECT 1`
-    isWarmedUp = true
-    console.log('Database connection warmed up successfully')
-    return true
+    // Retry logic
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        // Simple query to establish connection
+        await prisma.$queryRaw`SELECT 1`
+        isWarmedUp = true
+        console.log('Database connection warmed up successfully')
+        return true
+      } catch (error) {
+        console.error(`Database warmup attempt ${attempt + 1} failed:`, error)
+        // Wait before retrying
+        await new Promise(res => setTimeout(res, 1000))
+      }
+    }
   } catch (error) {
     console.error('Database warmup failed:', error)
     // Don't throw - let the actual query handle the error

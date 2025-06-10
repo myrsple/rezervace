@@ -15,9 +15,9 @@ interface BookingFormProps {
 }
 
 const PRICING = {
-  day: 400,
-  '24h': 600,
-  '48h': 1000
+  day: 1250,    // 6:00 - 22:00
+  '24h': 2000,  // 24 hours (starting 6:00 or 18:00)
+  '48h': 3750   // 48 hours (starting 6:00 or 18:00)
 }
 
 export default function BookingForm({
@@ -61,6 +61,23 @@ export default function BookingForm({
     setIsSubmitting(true)
     setError('')
 
+    // Basic form validation
+    if (!formData.customerName.trim()) {
+      setError('Prosím vyplňte jméno')
+      setIsSubmitting(false)
+      return
+    }
+    if (!formData.customerEmail.trim()) {
+      setError('Prosím vyplňte email')
+      setIsSubmitting(false)
+      return
+    }
+    if (!formData.customerPhone.trim()) {
+      setError('Prosím vyplňte telefonní číslo')
+      setIsSubmitting(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/reservations', {
         method: 'POST',
@@ -79,16 +96,19 @@ export default function BookingForm({
         }),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error('Failed to create reservation')
+        throw new Error(data.error || 'Failed to create reservation')
       }
 
-      const reservation = await response.json()
-      setReservationData(reservation)
+      setReservationData(data)
       setSuccess(true)
+      onComplete()
 
     } catch (err) {
-      setError('Rezervace se nezdařila. Zkuste to prosím znovu.')
+      console.error('Reservation error:', err)
+      setError(err instanceof Error ? err.message : 'Rezervace se nezdařila. Zkuste to prosím znovu.')
     } finally {
       setIsSubmitting(false)
     }

@@ -11,15 +11,10 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
     }
   },
   log: ['query', 'info', 'warn', 'error'],
-  errorFormat: 'pretty',
-  __internal: {
-    engine: {
-      connect_timeout: 10000 // 10 seconds
-    }
-  }
+  errorFormat: 'pretty'
 })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma 
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 // Middleware to handle retries
 prisma.$use(async (params, next) => {

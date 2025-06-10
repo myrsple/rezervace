@@ -3,30 +3,28 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-    // Update existing fishing spots or create new ones
-  const fishingSpots = []
-  
-  for (let i = 1; i <= 15; i++) {
-    const spot = await prisma.fishingSpot.upsert({
-      where: { number: i },
-      update: {
-        name: `Lovné místo ${i}`,
-        description: `Prémiová lovná lokalita s výborným přístupem k vodě. Místo ${i} nabízí skvělé příležitosti jak pro začátečníky, tak pro zkušené rybáře.`,
-        isActive: true,
-      },
-      create: {
-        number: i,
-        name: `Lovné místo ${i}`,
-        description: `Prémiová lovná lokalita s výborným přístupem k vodě. Místo ${i} nabízí skvělé příležitosti jak pro začátečníky, tak pro zkušené rybáře.`,
-        isActive: true,
-      },
-    })
-    fishingSpots.push(spot)
+  // --- Only add/update the VIP spot ---
+  const vipNumber = 99;
+  const vipData = {
+    name: 'Lovné místo VIP',
+    description: 'Exkluzivní VIP lovné místo s nejlepším přístupem a soukromím.',
+    isActive: true,
+  };
+  const existingVip = await prisma.fishingSpot.findUnique({ where: { number: vipNumber } });
+  if (existingVip) {
+    await prisma.fishingSpot.update({
+      where: { number: vipNumber },
+      data: vipData,
+    });
+    console.log('VIP lovné místo bylo aktualizováno.');
+  } else {
+    await prisma.fishingSpot.create({
+      data: { number: vipNumber, ...vipData },
+    });
+    console.log('VIP lovné místo bylo přidáno.');
   }
-  
-  console.log(`Aktualizováno ${fishingSpots.length} lovných míst`)
-  
-  // Create or update admin user (you should change this password in production)
+
+  // --- Admin user logic remains unchanged ---
   const admin = await prisma.admin.upsert({
     where: { email: 'admin@rybarstvo.cz' },
     update: {

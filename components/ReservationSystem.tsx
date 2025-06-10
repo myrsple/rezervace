@@ -108,7 +108,7 @@ export default function ReservationSystem() {
         <div className="mb-6 flex justify-center">
           <div className="relative w-1/2">
             <img 
-              src="/lovna-mista.jpeg" 
+              src="/lm-mapa.png" 
               alt="Mapa lovných míst" 
               className="w-full h-auto rounded-lg border border-gray-200 shadow-sm"
             />

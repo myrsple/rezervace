@@ -49,21 +49,40 @@ export default function AdminDashboard() {
         fetch('/api/competitions')
       ])
 
-      if (!reservationsRes.ok) {
-        throw new Error(`Reservations API error: ${reservationsRes.status}`)
-      }
-      if (!spotsRes.ok) {
-        throw new Error(`Fishing spots API error: ${spotsRes.status}`)
-      }
-      if (!competitionsRes.ok) {
-        throw new Error(`Competitions API error: ${competitionsRes.status}`)
+      // Handle each response individually
+      let reservationsData = []
+      let spotsData = []
+      let competitionsData = []
+
+      try {
+        if (!reservationsRes.ok) {
+          throw new Error(`Reservations API error: ${reservationsRes.status}`)
+        }
+        reservationsData = await reservationsRes.json()
+      } catch (error) {
+        console.error('Error fetching reservations:', error)
+        showFeedback('error', 'Nepodařilo se načíst rezervace')
       }
 
-      const [reservationsData, spotsData, competitionsData] = await Promise.all([
-        reservationsRes.json(),
-        spotsRes.json(),
-        competitionsRes.json()
-      ])
+      try {
+        if (!spotsRes.ok) {
+          throw new Error(`Fishing spots API error: ${spotsRes.status}`)
+        }
+        spotsData = await spotsRes.json()
+      } catch (error) {
+        console.error('Error fetching fishing spots:', error)
+        showFeedback('error', 'Nepodařilo se načíst lovná místa')
+      }
+
+      try {
+        if (!competitionsRes.ok) {
+          throw new Error(`Competitions API error: ${competitionsRes.status}`)
+        }
+        competitionsData = await competitionsRes.json()
+      } catch (error) {
+        console.error('Error fetching competitions:', error)
+        showFeedback('error', 'Nepodařilo se načíst závody')
+      }
 
       // Ensure we have arrays even if the API returns undefined
       setReservations(Array.isArray(reservationsData) ? reservationsData : [])
@@ -71,10 +90,7 @@ export default function AdminDashboard() {
       setCompetitions(Array.isArray(competitionsData) ? competitionsData : [])
     } catch (error) {
       console.error('Error fetching data:', error)
-      // Set empty arrays as fallback
-      setReservations([])
-      setFishingSpots([])
-      setCompetitions([])
+      showFeedback('error', 'Nepodařilo se načíst data')
     } finally {
       setLoading(false)
     }

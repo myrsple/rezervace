@@ -10,11 +10,13 @@ export async function GET() {
       })
     })
     
-    return NextResponse.json(spots)
+    // Ensure we always return an array, even if empty
+    return NextResponse.json(spots || [])
   } catch (error) {
     console.error('Error fetching fishing spots:', error)
+    // Return a properly formatted error response
     return NextResponse.json(
-      { error: 'Failed to fetch fishing spots' },
+      { error: 'Failed to fetch fishing spots', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

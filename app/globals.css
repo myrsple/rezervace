@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom color variables for the fishery theme */
+:root {
+  --semin-blue: #1e40af;
+  --semin-light-blue: #3b82f6;
+  --semin-green: #059669;
+  --semin-light-gray: #f8fafc;
+  --semin-dark-gray: #374151;
+}
+
+/* Custom styles for the application */
+.bg-semin-blue {
+  background-color: var(--semin-blue);
+}
+
+.bg-semin-light-blue {
+  background-color: var(--semin-light-blue);
+}
+
+.bg-semin-green {
+  background-color: var(--semin-green);
+}
+
+.text-semin-blue {
+  color: var(--semin-blue);
+}
+
+.text-semin-green {
+  color: var(--semin-green);
+}
+
+/* Custom gradient backgrounds */
+.from-semin-light-blue {
+  --tw-gradient-from: var(--semin-light-blue);
+  --tw-gradient-to: rgb(59 130 246 / 0);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.to-semin-light-gray {
+  --tw-gradient-to: var(--semin-light-gray);
+}
+
+/* Smooth transitions for interactive elements */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+} 

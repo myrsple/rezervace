@@ -68,71 +68,86 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
   if (success && registrationData) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-2xl shadow-soft p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-12 h-12 bg-semin-green/10 rounded-xl flex items-center justify-center mb-3">
+              <svg className="w-6 h-6 text-semin-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Registrace úspěně dokončena!</h2>
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Shrnutí registrace</h3>
-              <div className="text-left space-y-2 text-sm text-gray-800">
-                <p><strong>Závod:</strong> {competition.name}</p>
-                <p><strong>Datum:</strong> {new Date(competition.date).toLocaleDateString('cs-CZ', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</p>
-                <p><strong>Jméno:</strong> {registrationData.customerName}</p>
-                <p><strong>E-mail:</strong> {registrationData.customerEmail}</p>
-                <p><strong>Telefon:</strong> {registrationData.customerPhone}</p>
-                {selectedGear.length > 0 && (
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-semin-green mb-1">Registrace úspěšně dokončena!</h3>
+              <p className="text-semin-gray">Brzy obdržíte potvrzovací e-mail.</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Registration Details */}
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
                   <div>
-                    <strong>Půjčené vybavení:</strong>
-                    <ul className="list-disc list-inside ml-4">
-                      {selectedGear.map(gearId => {
-                        const gearItem = GEAR_ITEMS.find(item => item.id === gearId)
-                        return (
-                          <li key={gearId}>{gearItem ? gearItem.name : gearId}</li>
-                        )
-                      })}
-                    </ul>
+                    <div className="text-sm text-blue-800 font-medium mb-1">Shrnutí registrace</div>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between"><span className="text-gray-600">Závod:</span><span className="text-gray-900 font-medium">{competition.name}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Datum:</span><span className="text-gray-900 font-medium">{new Date(competition.date).toLocaleDateString('cs-CZ', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Jméno:</span><span className="text-gray-900 font-medium">{registrationData.customerName}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">E-mail:</span><span className="text-gray-900 font-medium">{registrationData.customerEmail}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Telefon:</span><span className="text-gray-900 font-medium">{registrationData.customerPhone}</span></div>
+                    </div>
                   </div>
-                )}
-                <div className="border-t pt-2 mt-3">
-                  <p><strong>Vstupné:</strong> {competition.entryFee} Kč</p>
-                  {gearPrice > 0 && <p><strong>Vybavení:</strong> {gearPrice} Kč</p>}
-                  <p className="text-lg font-semibold"><strong>Celkem k úhradě:</strong> {totalPrice} Kč</p>
+                  {selectedGear.length > 0 && (
+                    <div>
+                      <div className="text-sm text-blue-800 font-medium mb-1">Půjčené vybavení</div>
+                      <ul className="list-disc list-inside text-sm text-gray-900 ml-4">
+                        {selectedGear.map(gearId => {
+                          const gearItem = GEAR_ITEMS.find(item => item.id === gearId)
+                          return gearItem ? (
+                            <li key={gearId}>{gearItem.name}</li>
+                          ) : null
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-4">
+                  <div className="text-sm text-blue-800 font-medium mb-1">Souhrn ceny</div>
+                  <div className="text-sm space-y-1">
+                    <div className="flex justify-between"><span className="text-gray-600">Vstupné:</span><span className="text-gray-900">{competition.entryFee} Kč</span></div>
+                    {gearPrice > 0 && (
+                      <div className="flex justify-between"><span className="text-gray-600">Vybavení:</span><span className="text-gray-900">{gearPrice} Kč</span></div>
+                    )}
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="font-medium text-gray-900">Celkem k úhradě:</span>
+                      <span className="font-bold text-gray-900 text-lg">{totalPrice} Kč</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
+            {/* Payment Info */}
             {registrationData.variableSymbol && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">Platební informace</h3>
-                <div className="text-sm text-blue-800 space-y-1">
-                  <p><strong>Číslo účtu:</strong> 123456789/0100</p>
-                  <p><strong>Variabilní symbol:</strong> {registrationData.variableSymbol}</p>
-                  <p><strong>Částka:</strong> {totalPrice} Kč</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+                <div className="mb-2 text-sm text-blue-900">Pro urychlení rezervace můžete provést platbu předem.</div>
+                <div className="text-sm text-blue-800 space-y-1 mb-4">
+                  <div className="flex justify-between"><span>Číslo účtu:</span><span className="font-mono text-gray-900">123456789/0100</span></div>
+                  <div className="flex justify-between"><span>Variabilní symbol:</span><span className="font-mono text-gray-900">{registrationData.variableSymbol}</span></div>
+                  <div className="flex justify-between"><span>Částka:</span><span className="font-mono text-gray-900">{totalPrice} Kč</span></div>
                 </div>
-                <div className="mt-4 p-4 bg-white rounded border">
+                <div className="flex justify-center mb-2">
                   <img 
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SPD*1.0*ACC:CZ6801000000123456789*AM:${totalPrice}*CC:CZK*RF:${registrationData.variableSymbol}*MSG:Registrace%20zavod%20${encodeURIComponent(competition.name)}`}
                     alt="QR kód pro platbu"
-                    className="mx-auto"
+                    className="w-32 h-32 rounded-lg"
                   />
-                  <p className="text-xs text-gray-600 mt-2 text-center">
-                    Naskenujte QR kód pro rychlou platbu
-                  </p>
                 </div>
+                <p className="text-xs text-gray-600 text-center">Naskenujte QR kód pro rychlou platbu</p>
               </div>
             )}
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            {/* Map Section */}
+            <div className="bg-gray-50 rounded-2xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Jak se k nám dostanete</h3>
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1651.405240448874!2d15.531935757891537!3d50.053176652165135!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470c30b45180bd21%3A0x420a9f30bd933982!2zVG9tw6HFoWVr!5e1!3m2!1sen!2scz!4v1749514996026!5m2!1sen!2scz"
@@ -148,7 +163,7 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
 
             <button
               onClick={onClose}
-              className="w-full bg-semin-green text-white py-3 px-6 rounded-2xl font-semibold text-lg shadow-card hover:bg-semin-green/90 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-semin-green/30 transition-all duration-200"
+              className="w-full bg-semin-blue text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-card hover:bg-semin-blue/90 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-semin-blue/30 transition-all duration-200 mt-2"
             >
               Dokončit registraci
             </button>
@@ -171,23 +186,15 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
           </button>
         </div>
 
-        <div className="bg-blue-50 rounded-lg p-4 mb-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">{competition.name}</h3>
-          <p className="text-blue-800">
-            <strong>Datum:</strong> {new Date(competition.date).toLocaleDateString('cs-CZ', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </p>
-          <p className="text-blue-800">
-            <strong>Vstupné:</strong> {competition.entryFee} Kč
-          </p>
-          <p className="text-blue-800">
-            <strong>Kapacita:</strong> {competition.capacity} účastníků
-          </p>
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 mb-6">
+          <div className="mb-2">
+            <h3 className="text-lg font-semibold text-blue-900 mb-1">{competition.name}</h3>
+            <div className="text-sm text-blue-800">
+              <div className="flex justify-between"><span>Datum:</span><span>{new Date(competition.date).toLocaleDateString('cs-CZ', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
+              <div className="flex justify-between"><span>Vstupné:</span><span>{competition.entryFee} Kč</span></div>
+              <div className="flex justify-between"><span>Kapacita:</span><span>{competition.capacity} účastníků</span></div>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

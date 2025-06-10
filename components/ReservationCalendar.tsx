@@ -71,12 +71,13 @@ export default function ReservationCalendar({
     )
   }, [reservations, spot.id])
 
-  const getDateAvailability = (date: Date): 'available' | 'occupied' | 'partial' | 'competition' => {
+  const getDateAvailability = (date: Date): 'available' | 'occupied' | 'partial' | 'competition' | 'past' => {
     const dayStart = startOfDay(date)
-    
-    // Check if date is in the past
-    if (isBefore(dayStart, startOfDay(currentDate))) {
-      return 'occupied'
+    const today = startOfDay(new Date())
+
+    // Check if date is in the past (before today)
+    if (isBefore(dayStart, today)) {
+      return 'past'
     }
 
     // Check if there's a competition on this date
@@ -95,8 +96,10 @@ export default function ReservationCalendar({
     const dayReservations = spotReservations.filter(reservation => {
       const reservationStart = new Date(reservation.startDate)
       const reservationEnd = new Date(reservation.endDate)
-      
-      return dayStart >= startOfDay(reservationStart) && dayStart <= startOfDay(reservationEnd)
+      // The day starts at 00:00 and ends at 23:59:59
+      const dayStart = startOfDay(date)
+      const dayEnd = addDays(dayStart, 1)
+      return reservationStart < dayEnd && reservationEnd > dayStart
     })
 
     if (dayReservations.length === 0) {
@@ -129,16 +132,12 @@ export default function ReservationCalendar({
 
   const canSelectDate = (date: Date): boolean => {
     const availability = getDateAvailability(date)
-    
-    if (availability === 'occupied' || availability === 'competition') return false
-    
+    if (availability === 'past' || availability === 'occupied' || availability === 'competition') return false
     if (duration === '48h') {
-      // For 48h bookings, check next day availability too
       const nextDay = addDays(date, 1)
       const nextDayAvailability = getDateAvailability(nextDay)
-      return nextDayAvailability !== 'occupied'
+      return nextDayAvailability !== 'occupied' && nextDayAvailability !== 'past'
     }
-    
     return true
   }
 
@@ -147,9 +146,9 @@ export default function ReservationCalendar({
     isSelected: boolean,
     canSelect: boolean,
     isCurrentMonth: boolean,
-    availability: 'available' | 'occupied' | 'partial' | 'competition'
+    availability: 'available' | 'occupied' | 'partial' | 'competition' | 'past'
   ): string => {
-    const baseClasses = "min-h-[90px] p-2 flex flex-col justify-between text-left transition-all duration-200 text-sm"
+    const baseClasses = "min-h-[60px] p-1 flex flex-col justify-between text-left transition-all duration-200 text-sm"
 
     if (!isCurrentMonth) {
       return `${baseClasses} bg-gray-50/50 text-gray-300 cursor-not-allowed`
@@ -162,15 +161,17 @@ export default function ReservationCalendar({
     // Match the legend colors for each state
     switch (availability) {
       case 'available':
-        return `${baseClasses} bg-green-50/50 hover:bg-green-100/50 text-gray-700 hover:text-green-800 cursor-pointer ring-1 ring-green-100 hover:ring-green-200`
+        return `${baseClasses} bg-green-200 hover:bg-green-300 text-gray-800 hover:text-green-900 cursor-pointer ring-1 ring-green-300 hover:ring-green-400`
       case 'occupied':
-        return `${baseClasses} bg-red-50/50 text-gray-500 cursor-not-allowed ring-1 ring-red-100`
+        return `${baseClasses} bg-red-200 text-gray-700 cursor-not-allowed ring-1 ring-red-300`
       case 'partial':
-        return `${baseClasses} bg-yellow-50/50 hover:bg-yellow-100/50 text-gray-700 hover:text-yellow-800 cursor-pointer ring-1 ring-yellow-100 hover:ring-yellow-200`
+        return `${baseClasses} bg-yellow-200 hover:bg-yellow-300 text-gray-800 hover:text-yellow-900 cursor-pointer ring-1 ring-yellow-300 hover:ring-yellow-400`
       case 'competition':
-        return `${baseClasses} bg-purple-50/50 text-purple-700 cursor-not-allowed ring-1 ring-purple-100`
+        return `${baseClasses} bg-purple-200 text-purple-900 cursor-not-allowed ring-1 ring-purple-300`
+      case 'past':
+        return `${baseClasses} bg-gray-100 text-gray-400 cursor-not-allowed`;
       default:
-        return `${baseClasses} bg-gray-50/50 text-gray-400 cursor-not-allowed`
+        return `${baseClasses} bg-gray-100 text-gray-400 cursor-not-allowed`
     }
   }
 
@@ -178,7 +179,7 @@ export default function ReservationCalendar({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold text-semin-blue">
-          {format(monthStart, 'MMMM yyyy', { locale: cs })} • Lovné místo {spot.number}
+          Lovné místo {spot.number}
         </h3>
         <div className="flex items-center space-x-2">
           <button 
@@ -189,12 +190,9 @@ export default function ReservationCalendar({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <button 
-            onClick={() => setCurrentDate(new Date())} 
-            className="px-3 py-1.5 text-sm font-medium text-semin-blue bg-semin-blue/10 rounded-xl hover:bg-semin-blue/20 transition-colors"
-          >
-            Dnes
-          </button>
+          <span className="px-3 py-1.5 text-sm font-bold text-semin-blue bg-semin-blue/10 rounded-xl">
+            {format(currentDate, 'LLLL yyyy', { locale: cs })}
+          </span>
           <button 
             onClick={() => setCurrentDate(addDays(currentDate, 30))} 
             className="p-2 rounded-xl hover:bg-gray-100 text-gray-600 transition-colors"
@@ -208,35 +206,35 @@ export default function ReservationCalendar({
 
       <div className="flex justify-end space-x-4 text-xs">
         <div className="flex items-center">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-100 ring-1 ring-green-200 mr-1.5"></div>
+          <div className="w-3 h-3 rounded bg-green-200 ring-1 ring-green-300 mr-1.5"></div>
           <span className="text-gray-600">Volné</span>
         </div>
         <div className="flex items-center">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-100 ring-1 ring-red-200 mr-1.5"></div>
+          <div className="w-3 h-3 rounded bg-red-200 ring-1 ring-red-300 mr-1.5"></div>
           <span className="text-gray-600">Obsazené</span>
         </div>
         <div className="flex items-center">
-          <div className="w-2.5 h-2.5 rounded-full bg-yellow-100 ring-1 ring-yellow-200 mr-1.5"></div>
+          <div className="w-3 h-3 rounded bg-yellow-200 ring-1 ring-yellow-300 mr-1.5"></div>
           <span className="text-gray-600">Částečně</span>
         </div>
         <div className="flex items-center">
-          <div className="w-2.5 h-2.5 rounded-full bg-purple-100 ring-1 ring-purple-200 mr-1.5"></div>
+          <div className="w-3 h-3 rounded bg-purple-200 ring-1 ring-purple-300 mr-1.5"></div>
           <span className="text-gray-600">Závod</span>
         </div>
       </div>
 
-      <div className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-100">
-        {/* Calendar Header */}
-        <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-100">
+      <div className="rounded-md overflow-hidden bg-white shadow-lg border border-gray-100 mt-4 mb-6">
+        {/* Weekday Bar: reduce corner radius */}
+        <div className="grid grid-cols-7 bg-gray-100 rounded-t-md">
           {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(day => (
-            <div key={day} className="py-2 text-xs font-medium text-gray-600 text-center">
+            <div key={day} className="py-2 text-xs font-bold text-gray-700 text-center tracking-wide">
               {day}
             </div>
           ))}
         </div>
 
-        {/* Calendar Days */}
-        <div className="grid grid-cols-7 divide-x divide-y divide-gray-100">
+        {/* Calendar Days: reduce cell radius, align numbers left */}
+        <div className="grid grid-cols-7 gap-1 p-2 bg-white">
           {calendarDays.map(date => {
             const isSelected = !!(selectedDate && isSameDay(date, selectedDate));
             const canSelect = canSelectDate(date);
@@ -244,26 +242,40 @@ export default function ReservationCalendar({
             const isCurrentMonth = date.getMonth() === monthStart.getMonth();
             const dateKey = format(date, 'yyyy-MM-dd');
             const weather = weatherData[dateKey];
-            
+            const isTodayDate = isToday(date);
+
+            // Modern cell style
+            let cellClasses = getDayClasses(date, isSelected, canSelect, isCurrentMonth, availability) +
+              ' rounded-md font-semibold transition-transform duration-150 ease-in-out';
+            if (canSelect && isCurrentMonth && !isSelected) {
+              cellClasses += ' hover:scale-105 hover:shadow-md focus:scale-105 focus:shadow-md';
+            }
+            if (isTodayDate) {
+              cellClasses += ' ring-2 ring-semin-blue';
+            }
+
             return (
               <button
                 key={date.toISOString()}
                 onClick={() => canSelect && onDateSelect(date)}
-                className={getDayClasses(date, isSelected, canSelect, isCurrentMonth, availability)}
+                className={cellClasses}
                 disabled={!canSelect || !isCurrentMonth}
+                style={{ minHeight: 48 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className={`font-medium ${
-                    isToday(date) 
-                      ? 'bg-semin-blue text-white w-6 h-6 rounded-full flex items-center justify-center text-xs' 
-                      : ''
-                  }`}>
-                    {format(date, 'd')}
-                  </div>
-                  {isCurrentMonth && weather && (
-                    <div className="text-xl">{weather.icon}</div>
+                <div className="flex items-center h-7">
+                  {isTodayDate ? (
+                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow">
+                      {format(date, 'd')}
+                    </span>
+                  ) : (
+                    <span className="text-base font-semibold text-left">
+                      {format(date, 'd')}
+                    </span>
                   )}
                 </div>
+                {isCurrentMonth && weather && (
+                  <div className="text-xl mt-1">{weather.icon}</div>
+                )}
               </button>
             )
           })}
@@ -271,16 +283,27 @@ export default function ReservationCalendar({
       </div>
 
       {competitions.length > 0 && (
-        <div className="mt-6 p-4 bg-purple-50/50 border border-purple-200 rounded-2xl text-sm">
-          <h4 className="font-bold text-purple-800 mb-2">Nadcházející závody</h4>
-          {competitions.map(comp => (
-            <div key={comp.id} className="text-purple-700">
-              <strong>{format(new Date(comp.date), 'dd.MM.yyyy')}:</strong> {comp.name}
+        <div className="mt-6 bg-blue-50 border border-blue-100 rounded-2xl p-6">
+          <h4 className="text-lg font-semibold text-blue-900 mb-2">Nadcházející závody</h4>
+          <div className="space-y-2">
+            {competitions
+              .filter(comp => new Date(comp.date) >= startOfDay(new Date()))
+              .map(comp => (
+                <div key={comp.id} className="flex items-center space-x-3 text-sm">
+                  <div className="w-24 text-blue-800 font-medium">
+                    {format(new Date(comp.date), 'dd.MM.yyyy')}
+                  </div>
+                  <div className="text-gray-900 font-medium">{comp.name}</div>
+                </div>
+              ))}
+            <div className="pt-4">
+              <span className="text-sm text-blue-900">V tyto dny není možné rezervovat lovné místo, ale můžete se </span>
+              <a href="#competitions" className="text-sm font-medium text-purple-600 hover:text-purple-700 underline">
+                přihlásit do závodu
+              </a>
+              <span className="text-sm text-blue-900">.</span>
             </div>
-          ))}
-          <p className="text-xs text-purple-600 mt-2">
-            V dny závodů nelze rezervovat lovná místa. <a href="#competitions" className="font-semibold underline">Přihlaste se!</a>
-          </p>
+          </div>
         </div>
       )}
     </div>

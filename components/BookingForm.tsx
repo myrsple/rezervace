@@ -148,100 +148,109 @@ export default function BookingForm({
 
   if (success) {
     return (
-      <div className="text-center py-12">
-        <div className="w-20 h-20 mx-auto mb-6 bg-semin-green/10 rounded-2xl flex items-center justify-center">
-          <svg className="w-10 h-10 text-semin-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+      <div>
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-12 h-12 bg-semin-green/10 rounded-xl flex items-center justify-center mb-3">
+            <svg className="w-6 h-6 text-semin-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-semin-green">Rezervace potvrzena!</h3>
+            <p className="text-semin-gray">Brzy obdržíte potvrzovací e-mail.</p>
+          </div>
         </div>
-        <h3 className="text-2xl font-bold text-semin-green mb-3">Rezervace potvrzena!</h3>
-        <p className="text-semin-gray text-lg mb-6">Vaše rezervace byla úspěšně vytvořena. Brzy obdržíte potvrzovací e-mail.</p>
-        
-        {/* Payment Information */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-lg mx-auto">
-          <h4 className="text-lg font-semibold text-blue-800 mb-4">Platba předem</h4>
-          <p className="text-sm text-blue-700 mb-4">
-            Pro rychlejší odbavení můžete uhradit celou částku předem bankovním převodem.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Payment Details */}
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="font-medium text-blue-800">Číslo účtu:</span>
-                <span className="text-blue-700 font-mono">1234567890/0100</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-blue-800">Částka:</span>
-                <span className="text-blue-700 font-semibold">{totalPrice} Kč</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-blue-800">Variabilní symbol:</span>
-                <span className="text-blue-700 font-mono font-bold text-lg">
-                  {reservationData?.variableSymbol || '------'}
-                </span>
-              </div>
-            </div>
-            
-            {/* QR Code */}
-            <div className="flex justify-center">
-              {qrCodeUrl ? (
-                <img 
-                  src={qrCodeUrl} 
-                  alt="QR kód pro platbu" 
-                  className="w-32 h-32 rounded-lg border border-blue-200"
-                />
-              ) : (
-                <div className="w-24 h-24 bg-white border-2 border-dashed border-blue-300 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-xs text-blue-600 font-medium">QR kód</div>
-                    <div className="text-xs text-blue-500">se načítá...</div>
+
+        <div className="space-y-6">
+          {/* Reservation Details */}
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm text-blue-800 font-medium mb-1">Kontaktní údaje</div>
+                  <div className="text-sm space-y-1">
+                    <p className="text-gray-900">{formData.customerName}</p>
+                    <p className="text-gray-600">{formData.customerEmail}</p>
+                    <p className="text-gray-600">{formData.customerPhone}</p>
                   </div>
                 </div>
-              )}
+
+                {selectedGear.length > 0 && (
+                  <div>
+                    <div className="text-sm text-blue-800 font-medium mb-1">Půjčené vybavení</div>
+                    <div className="text-sm space-y-1">
+                      {selectedGear.map(gearId => {
+                        const gearItem = GEAR_ITEMS.find(item => item.id === gearId)
+                        return gearItem && (
+                          <div key={gearId} className="flex justify-between">
+                            <span className="text-gray-900">{gearItem.name}</span>
+                            <span className="text-gray-600">{gearItem.price} Kč</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm text-blue-800 font-medium mb-1">Platební údaje</div>
+                  <div className="text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Číslo účtu:</span>
+                      <span className="text-gray-900 font-mono">{DEFAULT_BANK_ACCOUNT.accountNumber}/{DEFAULT_BANK_ACCOUNT.bankCode}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Variabilní symbol:</span>
+                      <span className="text-gray-900 font-mono">{reservationData?.variableSymbol}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Místo:</span>
+                      <span className="text-gray-900">{basePrice} Kč</span>
+                    </div>
+                    {gearPrice > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Vybavení:</span>
+                        <span className="text-gray-900">{gearPrice} Kč</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="font-medium text-gray-900">Celkem:</span>
+                      <span className="font-medium text-gray-900">{totalPrice} Kč</span>
+                    </div>
+                  </div>
+                </div>
+
+                {qrCodeUrl && (
+                  <div className="flex justify-center">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="QR kód pro platbu" 
+                      className="w-32 h-32 rounded-lg"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          
-          <p className="text-xs text-blue-600 mt-4 text-center">
-            Nezapomeňte uvést variabilní symbol při platbě!
-          </p>
-        </div>
-        
-        {/* Navigation Map */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 max-w-lg mx-auto mt-6">
-          <h4 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
-            <span className="mr-2">🗺️</span>
-            Jak se k nám dostanete
-          </h4>
-          <div className="bg-white rounded-lg border border-green-200 overflow-hidden">
-            <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1651.405240448874!2d15.531935757891537!3d50.053176652165135!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470c30b45180bd21%3A0x420a9f30bd933982!2zVG9tw6HFoWVr!5e1!3m2!1sen!2scz!4v1749514996026!5m2!1sen!2scz"
-              width="100%" 
-              height="200" 
-              style={{ border: 0 }} 
-              allowFullScreen={true}
-              loading="lazy" 
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Mapa - jak se k nám dostanete"
-            ></iframe>
-          </div>
-          <p className="text-sm text-green-700 mt-3 text-center">
-            Klikněte na mapu pro podrobné navigační pokyny
-          </p>
-        </div>
-        
-        {/* Close Button */}
-        <div className="mt-6">
+
           <button
             onClick={() => {
-              onComplete()
               setSuccess(false)
               setReservationData(null)
-              setFormData({ customerName: '', customerEmail: '', customerPhone: '' })
+              setQrCodeUrl('')
+              setFormData({
+                customerName: '',
+                customerEmail: '',
+                customerPhone: ''
+              })
+              setSelectedGear([])
+              onComplete()
             }}
-            className="w-full bg-semin-green text-white py-3 px-6 rounded-2xl font-semibold text-lg shadow-card hover:bg-semin-green/90 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-semin-green/30 transition-all duration-200"
+            className="w-full bg-semin-blue text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-card hover:bg-semin-blue/90 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-semin-blue/30 transition-all duration-200"
           >
-            Dokončit rezervaci
+            Vytvořit novou rezervaci
           </button>
         </div>
       </div>

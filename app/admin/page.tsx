@@ -36,6 +36,7 @@ export default function AdminDashboard() {
     toggle: new Set<number>()
   })
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [competitionSortConfigs, setCompetitionSortConfigs] = useState<Record<number, { key: string; direction: 'asc' | 'desc' }>>({})
 
   useEffect(() => {
     fetchData()
@@ -421,12 +422,13 @@ export default function AdminDashboard() {
   }
 
   const downloadCompetitionCSV = (competition: Competition) => {
-    const headers = ['Rybář', 'Email', 'Telefon', 'Vybavení', 'Vstupné', 'Cena vybavení', 'Placeno']
+    const headers = ['Rybář', 'Email', 'Telefon', 'VS', 'Vybavení', 'Vstupné', 'Cena vybavení', 'Placeno']
     
     const csvData = (competition.registrations || []).map(registration => [
       registration.customerName,
       registration.customerEmail,
       registration.customerPhone,
+      registration.variableSymbol || '',
       registration.rentedGear ? getGearNames(registration.rentedGear).join('; ') : '—',
       `${competition.entryFee} Kč`,
       `${registration.gearPrice || 0} Kč`,
@@ -517,6 +519,49 @@ export default function AdminDashboard() {
     if (aValue > bValue) return direction === 'asc' ? 1 : -1;
     return 0;
   })
+
+  const handleCompetitionSort = (competitionId: number, key: string) => {
+    setCompetitionSortConfigs(prev => {
+      const current = prev[competitionId] || { key: 'customerName', direction: 'desc' }
+      let direction: 'asc' | 'desc' = 'desc'
+      if (current.key === key && current.direction === 'desc') {
+        direction = 'asc'
+      }
+      return { ...prev, [competitionId]: { key, direction } }
+    })
+  }
+
+  const getSortedRegistrations = (competition: Competition) => {
+    const config = competitionSortConfigs[competition.id] || { key: 'customerName', direction: 'desc' }
+    const regs = [...(competition.registrations || [])]
+    regs.sort((a, b) => {
+      let aValue: any, bValue: any
+      switch (config.key) {
+        case 'customerName':
+          aValue = a.customerName
+          bValue = b.customerName
+          break
+        case 'variableSymbol':
+          aValue = a.variableSymbol || ''
+          bValue = b.variableSymbol || ''
+          break
+        case 'totalPrice':
+          aValue = a.totalPrice
+          bValue = b.totalPrice
+          break
+        case 'isPaid':
+          aValue = a.isPaid ? 1 : 0
+          bValue = b.isPaid ? 1 : 0
+          break
+        default:
+          return 0
+      }
+      if (aValue < bValue) return config.direction === 'asc' ? -1 : 1
+      if (aValue > bValue) return config.direction === 'asc' ? 1 : -1
+      return 0
+    })
+    return regs
+  }
 
   if (loading) {
     return (
@@ -819,13 +864,18 @@ export default function AdminDashboard() {
                     <div className="border-t border-gray-100 pt-3">
                       <h4 className="text-sm font-medium text-gray-700 mb-2">Příští rezervace:</h4>
                       {nextReservation ? (
-                        <div className="text-sm text-gray-600">
-                          <div className="font-medium">{nextReservation.customerName}</div>
-                          <div>{format(new Date(nextReservation.startDate), 'd.M.yyyy HH:mm', { locale: cs })}</div>
-                          <div className="text-xs text-gray-500">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex flex-col gap-1">
+                          <div className="text-base font-semibold text-green-900">{nextReservation.customerName}</div>
+                          <div className="text-lg font-bold text-green-800">
+                            {format(new Date(nextReservation.startDate), 'd.M.yyyy HH:mm', { locale: cs })}
+                          </div>
+                          <div className="text-xs text-green-700">
                             {nextReservation.duration === 'day' ? 'Jeden den' :
                              nextReservation.duration === '24h' ? '24 hodin' : '48 hodin'}
                           </div>
+                          <div className="text-xs text-green-700">{nextReservation.customerEmail} | {nextReservation.customerPhone}</div>
+                          <div className={`text-xs font-semibold mt-1 ${nextReservation.isPaid ? 'text-green-700' : 'text-red-600'}`}
+                            >{nextReservation.isPaid ? 'Zaplaceno' : 'Nezaplaceno'}</div>
                         </div>
                       ) : (
                         <div className="text-sm text-gray-500 italic">Žádné nadcházející rezervace</div>
@@ -993,15 +1043,49 @@ export default function AdminDashboard() {
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-50">
                                 <tr>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rybář</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VS</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vybavení</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cena</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placeno?</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'customerName')}>
+                                    <div className="flex items-center">
+                                      Rybář
+                                      {competitionSortConfigs[competition.id]?.key === 'customerName' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'variableSymbol')}>
+                                    <div className="flex items-center">
+                                      VS
+                                      {competitionSortConfigs[competition.id]?.key === 'variableSymbol' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Vybavení
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'totalPrice')}>
+                                    <div className="flex items-center">
+                                      Cena
+                                      {competitionSortConfigs[competition.id]?.key === 'totalPrice' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'isPaid')}>
+                                    <div className="flex items-center">
+                                      Placeno?
+                                      {competitionSortConfigs[competition.id]?.key === 'isPaid' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
-                                {competition.registrations.map((registration) => (
+                                {getSortedRegistrations(competition).map((registration) => (
                                   <tr key={registration.id} className={`hover:bg-gray-50 ${registration.isPaid ? 'bg-green-50' : ''}`}>
                                     <td className="px-4 py-2 whitespace-nowrap">
                                       <div>
@@ -1114,15 +1198,49 @@ export default function AdminDashboard() {
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-100">
                                 <tr>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rybář</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VS</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vybavení</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cena</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placeno?</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'customerName')}>
+                                    <div className="flex items-center">
+                                      Rybář
+                                      {competitionSortConfigs[competition.id]?.key === 'customerName' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'variableSymbol')}>
+                                    <div className="flex items-center">
+                                      VS
+                                      {competitionSortConfigs[competition.id]?.key === 'variableSymbol' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Vybavení
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'totalPrice')}>
+                                    <div className="flex items-center">
+                                      Cena
+                                      {competitionSortConfigs[competition.id]?.key === 'totalPrice' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'isPaid')}>
+                                    <div className="flex items-center">
+                                      Placeno?
+                                      {competitionSortConfigs[competition.id]?.key === 'isPaid' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
-                                {competition.registrations.map((registration) => (
+                                {getSortedRegistrations(competition).map((registration) => (
                                   <tr key={registration.id} className={`hover:bg-gray-50 ${registration.isPaid ? 'bg-green-50' : ''}`}>
                                     <td className="px-4 py-2 whitespace-nowrap">
                                       <div>

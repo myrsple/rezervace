@@ -1,155 +1,71 @@
-# Rezervační systém rybářství
+# Administrátorský manuál – Rezervační systém rybářství
 
-Moderní, full-stack rezervační systém pro lovná místa postavený na Next.js, TypeScript, Prisma a Tailwind CSS.
+Tento dokument slouží jako přehledný návod pro správu rezervačního systému lovných míst a závodů. Je určen pro administrátory a správce systému.
 
-## Funkce
+## Hlavní sekce administrace
 
-### Funkce pro zákazníky
-- **15 lovných míst**: Vyberte si z 15 prémiových lovných lokalit
-- **Flexibilní možnosti rezervace**:
-  - Jeden den (6:00 - 22:00) - 1250 Kč
-  - 24 hodin (začátek ráno nebo večer) - 2000 Kč
-  - 48 hodin (začátek ráno nebo večer) - 3750 Kč
-- **Chytrý kalendář**: Vizuální dostupnost s podporou částečných rezervací
-- **Jednoduché rezervování**: Vyžaduje pouze jméno, e-mail a telefon
-- **Dostupnost v reálném čase**: Zabraňuje dvojitým rezervacím s detekcí konfliktů
-
-### Funkce pro administrátory
-- **Dashboard**: Kompletní přehled všech rezervací a míst
-- **Správa rezervací**: Aktualizace stavu (Čekající, Potvrzeno, Zrušeno, Dokončeno)
-- **Správa míst**: Zobrazení všech lovných míst a jejich stavu
-- **Informace o zákaznících**: Přístup k údajům zákazníků pro každou rezervaci
-
-## Technology Stack
-
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Prisma ORM
-- **Database**: SQLite (development), PostgreSQL (production ready)
-- **Deployment**: Vercel-ready configuration
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd rezervace-ryby
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   Create a `.env.local` file in the root directory:
-   ```bash
-   # Database
-   DATABASE_URL="file:./dev.db"
-   
-   # Admin Authentication
-   ADMIN_SECRET="your-admin-secret-key-change-this"
-   
-   # Email Configuration (optional)
-   SMTP_HOST=""
-   SMTP_PORT=""
-   SMTP_USER=""
-   SMTP_PASS=""
-   ```
-
-4. **Initialize the database**
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   npx prisma db seed
-   ```
-
-5. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-6. **Open the application**
-   - Customer interface: http://localhost:3000
-   - Admin dashboard: http://localhost:3000/admin
-
-## Database Schema
-
-The system uses three main models:
-
-- **FishingSpot**: Manages the 15 fishing locations
-- **Reservation**: Handles all booking information
-- **Admin**: Admin user management
-
-## API Endpoints
-
-- `GET /api/fishing-spots` - Get all active fishing spots
-- `GET /api/reservations` - Get all reservations
-- `POST /api/reservations` - Create new reservation
-- `PATCH /api/reservations/[id]` - Update reservation status
-
-## Deployment to Vercel
-
-1. **Push to GitHub**
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   git push origin main
-   ```
-
-2. **Connect to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Import your GitHub repository
-   - Add environment variables in Vercel dashboard
-
-3. **Production Database**
-   For production, update `DATABASE_URL` to use PostgreSQL:
-   ```bash
-   DATABASE_URL="postgresql://username:password@host:port/database"
-   ```
-
-## Booking Logic
-
-### Availability System
-- **Available** (green): Spot is completely free
-- **Occupied** (red): Spot is fully booked or unavailable
-- **Partial** (yellow/red gradient): Single day booking exists, but 24h/48h booking is possible
-
-### Conflict Prevention
-- Day bookings (6AM-10PM) can coexist with evening 24h/48h bookings
-- 24h and 48h bookings prevent any other bookings on those dates
-- Past dates are automatically marked as occupied
-
-### Cenová struktura
-- **Jeden den**: 1250 Kč (6:00 - 22:00)
-- **24 hodin**: 2000 Kč (Ráno: začátek v 6:00, Večer: začátek v 18:00)
-- **48 hodin**: 3750 Kč (Ráno: začátek v 6:00, Večer: začátek v 18:00)
-
-## Přístup pro administrátory
-
-Výchozí přihlašovací údaje (změňte v produkci):
-- E-mail: admin@rybarstvo.cz  
-- Heslo: admin123
-
-## Future Enhancements
-
-Potential features for future development:
-- Email confirmation system
-- Payment integration
-- Weather integration
-- Customer reviews and ratings
-- Mobile app
-- Multi-language support
-
-## Support
-
-For support or questions, please contact the development team.
+Po přihlášení uvidíte tři hlavní záložky:
+- **Rezervace** – správa všech rezervací zákazníků
+- **Lovná místa** – správa jednotlivých míst a jejich dostupnosti
+- **Závody** – správa rybářských závodů a přihlášek
 
 ---
 
-Built with ❤️ for fishing enthusiasts 
+## 1. Rezervace
+
+- **Tabulka rezervací**: Přehled všech aktuálních i minulých rezervací.
+- **Řazení**: Kliknutím na záhlaví sloupce můžete řadit podle jména, data, ceny atd.
+- **Stav platby**: U každé rezervace lze označit, zda je zaplacena.
+- **Mazání rezervace**: Klikněte na ikonu koše a potvrďte smazání.
+- **Export**: Tlačítko "Stáhnout CSV" umožňuje exportovat rezervace pro jednoduché odbavování na místě a účetnictví.
+
+## 2. Lovná místa
+
+- **Přehled míst**: Zobrazení všech lovných míst, jejich stavu (aktivní/neaktivní) a nejbližší rezervace.
+- **Změna dostupnosti**: Přepínačem lze místo aktivovat/deaktivovat. Neaktivní místo není možné rezervovat.
+- **Barevné označení**: Zelená = volné, červená = obsazené, žlutá = částečně obsazené, šedá = minulost.
+- **Příští rezervace**: U každého místa je v zeleném boxu zvýrazněn příští rybář, včetně data, kontaktu a stavu platby.
+- **Stav platby**: U každého účastníka lze manuálně označit, zda má zaplaceno. Údaj se propíše do exportu CSV souborů.
+
+## 3. Závody
+
+- **Vytvoření závodu**: Vyplňte název, datum, kapacitu a vstupné. Klikněte na "Vytvořit závod".
+- **Správa závodů**: Aktivace/deaktivace, úprava údajů, mazání závodu (včetně všech přihlášek).
+- **Přihlášky**: Tabulka registrovaných účastníků s možností řazení a exportu do CSV.
+- **Stav platby**: U každého účastníka lze manuálně označit, zda má zaplaceno. Údaj se propíše do exportu CSV souborů.
+
+---
+
+## Práce s kalendářem
+
+- **Barvy v kalendáři**:
+  - Zelená: místo je volné
+  - Červená: místo je obsazené
+  - Žlutá: částečně obsazené (např. denní rezervace, ale 24/48h je možné)
+  - Fialová: koná se závod
+  - Šedá: minulost, nelze rezervovat
+- **Navigace**: Pomocí šipek přecházíte mezi měsíci. Aktuální měsíc je zobrazen vpravo nahoře.
+- **Kliknutí na den**: Otevře možnost vytvořit rezervaci, pokud je den volný.
+
+## Nejčastější úkony
+
+- **Označení platby**: Zaškrtněte políčko u rezervace nebo účastníka závodu.
+- **Zrušení rezervace**: Klikněte na koš, potvrďte smazání.
+- **Export dat**: Využijte tlačítko "Stáhnout CSV" v sekci rezervací nebo závodů.
+- **Změna dostupnosti místa**: Přepněte stav v sekci Lovná místa.
+
+## Doporučení a tipy
+
+- Při změně údajů závodu nebo místa vždy zkontrolujte, zda nedojde ke konfliktu s existujícími rezervacemi.
+- Pokud narazíte na problém, zkuste stránku obnovit (F5) nebo chvíli počkejte – web komunikuje s databází.
+
+## Next steps
+
+- Potřebuju přesný popis time slots pro odělání rezervací a překlenů mezi dny a půldny
+- Jaké jsou skutečné ceny?
+- Upravíme nějak texty?
+- Jaké skutečně nabízíte rental a prodeje a za jaké ceny?
+- Jaké jsou skutečné platební údaje?
+- Stačí takhle funkce, chybí něco dalšího? Můžem cokoliv přidat
+- Mobil a tablet asi ještě úplně nebudou fungovat, poladíme až bude final verze webové aplikace
+- Podařilo se vám něco rozbít, nebo jste se někde zasekli?

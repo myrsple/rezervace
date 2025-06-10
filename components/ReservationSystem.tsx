@@ -82,9 +82,9 @@ export default function ReservationSystem() {
   const handleReservationComplete = () => {
     // Refresh reservations after successful booking
     fetchReservations()
-    // Reset form
-    setSelectedDate(null)
-    setSelectedSpot(null)
+    
+    // Don't reset the form state immediately
+    // The user needs to see the success message first
   }
 
   if (loading) {

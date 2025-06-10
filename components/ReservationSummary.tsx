@@ -31,28 +31,26 @@ export default function ReservationSummary({
   }
 
   return (
-    <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-      <h3 className="text-xl font-bold text-semin-blue mb-4">
-        Shrnutí rezervace
-      </h3>
-      <div className="space-y-3 text-sm">
-        <div className="flex justify-between">
-          <span className="text-gray-600">Datum:</span>
-          <span className="font-medium text-gray-900">
+    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+      <h3 className="text-lg font-semibold text-blue-900 mb-2">Shrnutí rezervace</h3>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-blue-800">Datum:</span>
+          <span className="text-gray-900 font-medium">
             {format(date, 'EEEE, d. MMMM yyyy', { locale: cs })}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Začátek:</span>
-          <span className="font-medium text-gray-900">{getStartTime()}</span>
+        <div className="flex items-center justify-between">
+          <span className="text-blue-800">Začátek:</span>
+          <span className="text-gray-900 font-medium">{getStartTime()}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Délka:</span>
-          <span className="font-medium text-gray-900">{getDurationText()}</span>
+        <div className="flex items-center justify-between">
+          <span className="text-blue-800">Délka:</span>
+          <span className="text-gray-900 font-medium">{getDurationText()}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Místo:</span>
-          <span className="font-medium text-gray-900">#{spot.number} - Lovné místo {spot.number}</span>
+        <div className="flex items-center justify-between">
+          <span className="text-blue-800">Místo:</span>
+          <span className="text-gray-900 font-medium">#{spot.number} - Lovné místo {spot.number}</span>
         </div>
       </div>
     </div>

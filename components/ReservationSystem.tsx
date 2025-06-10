@@ -55,11 +55,10 @@ export default function ReservationSystem() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      const text = await response.text()
-      if (!text) {
-        throw new Error('Empty response')
+      const reservationsData = await response.json()
+      if (!Array.isArray(reservationsData)) {
+        throw new Error('Invalid response format')
       }
-      const reservationsData = JSON.parse(text)
       setReservations(reservationsData)
     } catch (error) {
       console.error('Error fetching reservations:', error)

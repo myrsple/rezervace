@@ -36,14 +36,17 @@ export default function FishingSpotSelector({
           disabled={!spot.isActive}
           title={!spot.isActive ? 'Toto lovné místo je dočasně nedostupné' : ''}
         >
-          <div className="text-base font-bold">
+          <div className="text-base font-bold flex flex-col items-center justify-center">
             {spot.name === 'Lovné místo VIP' ? (
               <>
-                <span>VIP</span><br />
-                <span className="text-xs font-normal">Lovné místo</span>
+                <span className="text-base font-bold mb-0.5">VIP</span>
+                <span className="text-xs font-bold">Lovné místo</span>
               </>
             ) : (
-              spot.number
+              <>
+                <span className="text-base font-bold mb-0.5">{spot.number}</span>
+                <span className="text-xs font-bold">Lovné místo</span>
+              </>
             )}
           </div>
           <div className="text-xs truncate w-full">

@@ -1,8 +1,7 @@
 'use client'
 
 import React, { useMemo, useState, useEffect } from 'react'
-import { FishingSpot, Reservation, CalendarDay, Competition, WeatherData } from '@/types'
-import { getWeatherForecast, getWeatherRecommendation } from '@/lib/weather'
+import { FishingSpot, Reservation, CalendarDay, Competition } from '@/types'
 import { 
   format, 
   startOfMonth, 
@@ -43,38 +42,10 @@ export default function ReservationCalendar({
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
   
   const [competitions, setCompetitions] = useState<Competition[]>([])
-  const [weatherData, setWeatherData] = useState<{[key: string]: WeatherData}>({})
-  const [loadingWeather, setLoadingWeather] = useState<{[key: string]: boolean}>({})
 
   useEffect(() => {
     fetchCompetitions()
-    // Preload weather for visible dates
-    loadWeatherForDates()
   }, [])
-
-  const loadWeatherForDates = async () => {
-    const datesToLoad = calendarDays.filter(date => 
-      !isBefore(date, startOfDay(currentDate)) && 
-      date.getMonth() === currentDate.getMonth()
-    ).slice(0, 10) // Load weather for first 10 future dates
-
-    for (const date of datesToLoad) {
-      const dateKey = format(date, 'yyyy-MM-dd')
-      if (!weatherData[dateKey] && !loadingWeather[dateKey]) {
-        setLoadingWeather(prev => ({ ...prev, [dateKey]: true }))
-        try {
-          const weather = await getWeatherForecast(date)
-          if (weather) {
-            setWeatherData(prev => ({ ...prev, [dateKey]: weather }))
-          }
-        } catch (error) {
-          console.error('Error loading weather:', error)
-        } finally {
-          setLoadingWeather(prev => ({ ...prev, [dateKey]: false }))
-        }
-      }
-    }
-  }
 
   const fetchCompetitions = async () => {
     try {
@@ -224,7 +195,7 @@ export default function ReservationCalendar({
       </div>
 
       {/* Calendar Header */}
-      <div className="calendar-grid bg-semin-light-gray border border-gray-200 rounded-t-xl">
+      <div className="grid grid-cols-7 bg-semin-light-gray border border-gray-200 rounded-t-xl">
         {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(day => (
           <div key={day} className="py-3 text-sm font-bold text-semin-blue text-center border-r border-gray-200 last:border-r-0">
             {day}
@@ -233,52 +204,21 @@ export default function ReservationCalendar({
       </div>
 
       {/* Calendar Days */}
-      <div className="calendar-grid border-l border-r border-b border-gray-200 rounded-b-xl bg-white">
+      <div className="grid grid-cols-7 border-l border-r border-b border-gray-200 rounded-b-xl bg-white">
         {calendarDays.map(date => {
           const canSelect = canSelectDate(date)
           const isCurrentMonth = date.getMonth() === currentDate.getMonth()
-          const dateKey = format(date, 'yyyy-MM-dd')
-          const weather = weatherData[dateKey]
-          const isFutureDate = !isBefore(date, startOfDay(currentDate))
-          
           return (
             <button
               key={date.toISOString()}
               onClick={() => canSelect && onDateSelect(date)}
-              className={`${getDayClasses(date)} border-r border-b border-gray-200 last:border-r-0 ${!isCurrentMonth ? 'bg-gray-50' : ''} relative`}
+              className={`${getDayClasses(date)} border-r border-b border-gray-200 last:border-r-0 ${!isCurrentMonth ? 'bg-gray-50' : ''}`}
               disabled={!canSelect}
             >
-              <div className="flex flex-col items-center h-full justify-between py-2">
+              <div className="flex flex-col items-center">
                 <span className={`text-sm font-medium ${!isCurrentMonth ? 'text-gray-400' : ''}`}>
                   {format(date, 'd')}
                 </span>
-                
-                {/* Weather Info */}
-                {weather && isFutureDate && isCurrentMonth && (
-                  <div className="flex flex-col items-center space-y-1 mt-1">
-                    <span className="text-lg">{weather.icon}</span>
-                    <span className="text-xs font-medium text-gray-600">
-                      {weather.temperature}°C
-                    </span>
-                    {(() => {
-                      const recommendation = getWeatherRecommendation(weather)
-                      return (
-                        <div className={`w-2 h-2 rounded-full ${
-                          recommendation.rating === 'excellent' ? 'bg-green-500' :
-                          recommendation.rating === 'good' ? 'bg-blue-500' :
-                          recommendation.rating === 'fair' ? 'bg-yellow-500' : 'bg-red-500'
-                        }`} title={recommendation.message}></div>
-                      )
-                    })()}
-                  </div>
-                )}
-                
-                {/* Loading indicator for weather */}
-                {loadingWeather[dateKey] && isFutureDate && isCurrentMonth && (
-                  <div className="absolute bottom-1 right-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  </div>
-                )}
               </div>
             </button>
           )
@@ -302,7 +242,25 @@ export default function ReservationCalendar({
         </div>
       )}
 
-
+      {/* Booking Summary */}
+      {selectedDate && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-800 mb-2">Shrnutí rezervace</h4>
+          <div className="space-y-1 text-sm text-blue-700">
+            <div><strong>Datum:</strong> {format(selectedDate, 'EEEE, d. MMMM yyyy', { locale: cs })}</div>
+            <div><strong>Délka:</strong> {
+              duration === 'day' ? 'Jeden den (6:00 - 22:00)' :
+              duration === '24h' ? '24 hodin' : '48 hodin'
+            }</div>
+            {(duration === '24h' || duration === '48h') && (
+              <div><strong>Začátek:</strong> {
+                timeSlot === 'morning' ? '6:00' : '18:00'
+              }</div>
+            )}
+            <div><strong>Místo:</strong> #{spot.number} - {spot.name}</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

@@ -537,7 +537,7 @@ export default function AdminDashboard() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Závody ({competitions.length})
+              Závody ({getActiveCompetitions().length})
             </button>
           </nav>
         </div>
@@ -869,103 +869,262 @@ export default function AdminDashboard() {
             {/* Active Competitions */}
             <div className="bg-white rounded-xl shadow-soft p-6">
               <h3 className="text-xl font-bold text-semin-blue mb-4">Aktivní závody</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="border-b-2 border-gray-200">
-                      <th className="text-left py-2">Název</th>
-                      <th className="text-left py-2">Datum</th>
-                      <th className="text-left py-2">Kapacita</th>
-                      <th className="text-left py-2">Startovné</th>
-                      <th className="text-left py-2">Registrace</th>
-                      <th className="text-left py-2">Akce</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getActiveCompetitions().map((competition) => (
-                      <tr key={competition.id} className="border-b border-gray-100">
-                        <td className="py-2">{competition.name}</td>
-                        <td className="py-2">{format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}</td>
-                        <td className="py-2">{competition.capacity}</td>
-                        <td className="py-2">{competition.entryFee} Kč</td>
-                        <td className="py-2">{competition.registrations?.length || 0} / {competition.capacity}</td>
-                        <td className="py-2 space-x-2">
+              <div className="space-y-6">
+                {getActiveCompetitions().map((competition) => (
+                  <div key={competition.id} className={`border border-gray-200 rounded-lg p-6 ${!competition.isActive ? 'bg-gray-50' : ''}`}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">{competition.name}</h4>
+                        <div className="text-sm text-gray-600 mt-1">
+                          <div>Datum a čas: {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}</div>
+                          <div>Kapacita: {competition.registrations?.length || 0} / {competition.capacity} účastníků</div>
+                          <div>Vstupné: {competition.entryFee} Kč</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={() => openEditCompetition(competition)}
+                          disabled={operationLoading.update || operationLoading.toggle.has(competition.id)}
+                          className="text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Upravit
+                        </button>
+                        <button
+                          onClick={() => toggleCompetitionStatus(competition.id, !competition.isActive)}
+                          disabled={operationLoading.toggle.has(competition.id)}
+                          className={`${
+                            competition.isActive ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'
+                          } disabled:opacity-50 disabled:cursor-not-allowed flex items-center`}
+                        >
+                          {operationLoading.toggle.has(competition.id) ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              {competition.isActive ? 'Deaktivuji...' : 'Aktivuji...'}
+                            </>
+                          ) : (
+                            competition.isActive ? 'Deaktivovat' : 'Aktivovat'
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openDeleteCompetitionConfirmation(competition.id, competition.name)}
+                          disabled={operationLoading.delete || operationLoading.toggle.has(competition.id)}
+                          className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Smazat
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Registration Progress */}
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Registrace</span>
+                        <span>{competition.registrations?.length || 0} / {competition.capacity}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-semin-blue h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(100, ((competition.registrations?.length || 0) / competition.capacity) * 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Registrations Table */}
+                    {competition.registrations && competition.registrations.length > 0 && (
+                      <div className="border-t pt-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className="text-sm font-medium text-gray-700">Registrovaní účastníci</h5>
                           <button
-                            onClick={() => openEditCompetition(competition)}
-                            disabled={operationLoading.update || operationLoading.toggle.has(competition.id)}
-                            className="text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => downloadCompetitionCSV(competition)}
+                            className="flex items-center space-x-1 px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
                           >
-                            Upravit
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>CSV</span>
                           </button>
-                          <button
-                            onClick={() => toggleCompetitionStatus(competition.id, !competition.isActive)}
-                            disabled={operationLoading.toggle.has(competition.id)}
-                            className={`${
-                              competition.isActive ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'
-                            } disabled:opacity-50 disabled:cursor-not-allowed flex items-center`}
-                          >
-                            {operationLoading.toggle.has(competition.id) ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                {competition.isActive ? 'Deaktivuji...' : 'Aktivuji...'}
-                              </>
-                            ) : (
-                              competition.isActive ? 'Deaktivovat' : 'Aktivovat'
-                            )}
-                          </button>
-                          <button
-                            onClick={() => openDeleteCompetitionConfirmation(competition.id, competition.name)}
-                            disabled={operationLoading.delete || operationLoading.toggle.has(competition.id)}
-                            className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Smazat
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rybář</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VS</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vybavení</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cena</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placeno?</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {competition.registrations.map((registration) => (
+                                <tr key={registration.id} className={`hover:bg-gray-50 ${registration.isPaid ? 'bg-green-50' : ''}`}>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {registration.customerName}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {registration.customerEmail}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {registration.customerPhone}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                    {registration.variableSymbol || '—'}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    {registration.rentedGear ? (
+                                      <div className="space-y-1">
+                                        {getGearNames(registration.rentedGear).map((gearName, index) => (
+                                          <div key={index} className="text-xs text-green-600">
+                                            {gearName}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900 font-medium">
+                                      {registration.totalPrice} Kč
+                                    </div>
+                                    {registration.rentedGear && (
+                                      <div className="text-xs text-green-600">
+                                        Vstupné: {competition.entryFee} Kč + vybavení: {registration.gearPrice || 0} Kč
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                    <input
+                                      type="checkbox"
+                                      checked={registration.isPaid}
+                                      onChange={(e) => updateCompetitionPaidStatus(registration.id, e.target.checked)}
+                                      className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Completed Competitions */}
             <div className="bg-white rounded-xl shadow-soft p-6">
               <h3 className="text-xl font-bold text-semin-blue mb-4">Dokončené závody</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="border-b-2 border-gray-200">
-                      <th className="text-left py-2">Název</th>
-                      <th className="text-left py-2">Datum</th>
-                      <th className="text-left py-2">Kapacita</th>
-                      <th className="text-left py-2">Startovné</th>
-                      <th className="text-left py-2">Registrace</th>
-                      <th className="text-left py-2">Akce</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getCompletedCompetitions().map((competition) => (
-                      <tr key={competition.id} className="border-b border-gray-100">
-                        <td className="py-2">{competition.name}</td>
-                        <td className="py-2">{format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}</td>
-                        <td className="py-2">{competition.capacity}</td>
-                        <td className="py-2">{competition.entryFee} Kč</td>
-                        <td className="py-2">{competition.registrations?.length || 0} / {competition.capacity}</td>
-                        <td className="py-2">
-                          <button
-                            onClick={() => downloadCompetitionCSV(competition)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            Stáhnout CSV
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-6">
+                {getCompletedCompetitions().map((competition) => (
+                  <div key={competition.id} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-700">{competition.name}</h4>
+                        <div className="text-sm text-gray-500 mt-1">
+                          <div>Datum a čas: {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}</div>
+                          <div>Počet účastníků: {competition.registrations?.length || 0} / {competition.capacity}</div>
+                          <div>Vstupné: {competition.entryFee} Kč</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                          Dokončen
+                        </span>
+                        <button
+                          onClick={() => downloadCompetitionCSV(competition)}
+                          className="flex items-center space-x-1 px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>CSV</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Final Results Table */}
+                    {competition.registrations && competition.registrations.length > 0 && (
+                      <div className="border-t pt-4">
+                        <h5 className="text-sm font-medium text-gray-700 mb-3">Finální výsledky</h5>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-100">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rybář</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VS</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vybavení</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cena</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placeno?</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {competition.registrations.map((registration) => (
+                                <tr key={registration.id} className={`hover:bg-gray-50 ${registration.isPaid ? 'bg-green-50' : ''}`}>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {registration.customerName}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {registration.customerEmail}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {registration.customerPhone}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                    {registration.variableSymbol || '—'}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    {registration.rentedGear ? (
+                                      <div className="space-y-1">
+                                        {getGearNames(registration.rentedGear).map((gearName, index) => (
+                                          <div key={index} className="text-xs text-green-600">
+                                            {gearName}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900 font-medium">
+                                      {registration.totalPrice} Kč
+                                    </div>
+                                    {registration.rentedGear && (
+                                      <div className="text-xs text-green-600">
+                                        Vstupné: {competition.entryFee} Kč + vybavení: {registration.gearPrice || 0} Kč
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                    <input
+                                      type="checkbox"
+                                      checked={registration.isPaid}
+                                      onChange={(e) => updateCompetitionPaidStatus(registration.id, e.target.checked)}
+                                      className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 

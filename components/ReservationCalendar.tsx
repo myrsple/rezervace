@@ -283,26 +283,6 @@ export default function ReservationCalendar({
           </p>
         </div>
       )}
-
-      {/* Booking Summary */}
-      {selectedDate && (
-        <div className="mt-6 p-4 bg-blue-50/50 border border-blue-200 rounded-2xl text-sm">
-          <h4 className="font-semibold text-blue-800 mb-2">Shrnutí rezervace</h4>
-          <div className="space-y-1 text-blue-700">
-            <div><strong>Datum:</strong> {format(selectedDate, 'EEEE, d. MMMM yyyy', { locale: cs })}</div>
-            <div><strong>Délka:</strong> {
-              duration === 'day' ? 'Jeden den (6:00 - 22:00)' :
-              duration === '24h' ? '24 hodin' : '48 hodin'
-            }</div>
-            {(duration === '24h' || duration === '48h') && (
-              <div><strong>Začátek:</strong> {
-                timeSlot === 'morning' ? '6:00' : '18:00'
-              }</div>
-            )}
-            <div><strong>Místo:</strong> #{spot.number} - {spot.name}</div>
-          </div>
-        </div>
-      )}
     </div>
   )
 } 

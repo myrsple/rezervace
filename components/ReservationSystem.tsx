@@ -8,6 +8,7 @@ import { FishingSpot, Reservation } from '@/types'
 import { format } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import { getWeatherForDate, WeatherData } from '@/lib/weather'
+import ReservationSummary from './ReservationSummary'
 
 export default function ReservationSystem() {
   const [selectedSpot, setSelectedSpot] = useState<FishingSpot | null>(null)
@@ -262,7 +263,17 @@ export default function ReservationSystem() {
           <h2 className="text-3xl font-bold text-semin-blue mb-6">
             Zbývá už jen potvrdit ✅
           </h2>
-          
+
+          {/* Reservation Summary */}
+          <div className="mb-8">
+            <ReservationSummary
+              spot={selectedSpot}
+              date={selectedDate}
+              duration={selectedDuration}
+              timeSlot={selectedTimeSlot}
+            />
+          </div>
+
           <BookingForm
             spot={selectedSpot}
             date={selectedDate}

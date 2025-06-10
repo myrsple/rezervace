@@ -26,13 +26,11 @@ export default function CompetitionSection() {
       }
       const data = await response.json()
       
-      // Filter out competitions that ended more than 48 hours ago
+      // Only show upcoming competitions
       const now = new Date()
       const activeCompetitions = data.filter((comp: Competition) => {
         const competitionDate = new Date(comp.date)
-        const endDate = addHours(competitionDate, 24) // Competition ends 24h after start
-        const visibilityEndDate = addHours(endDate, 48) // Show for 48h after end
-        return comp.isActive && isBefore(now, visibilityEndDate)
+        return comp.isActive && isBefore(now, competitionDate)
       })
       
       setCompetitions(activeCompetitions)

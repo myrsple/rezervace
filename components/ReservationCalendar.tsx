@@ -12,7 +12,8 @@ import {
   startOfWeek,
   endOfWeek,
   isBefore,
-  startOfDay
+  startOfDay,
+  isToday
 } from 'date-fns'
 import { cs } from 'date-fns/locale'
 
@@ -33,8 +34,10 @@ export default function ReservationCalendar({
   duration,
   timeSlot
 }: ReservationCalendarProps) {
-  const currentDate = new Date()
-  const monthStart = startOfMonth(currentDate)
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [weatherData, setWeatherData] = useState<Record<string, { temperature: number, icon: string }>>({})
+  const [loadingWeather, setLoadingWeather] = useState<Record<string, boolean>>({})
+  const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
   const monthEnd = endOfMonth(currentDate)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 })
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
@@ -135,118 +138,161 @@ export default function ReservationCalendar({
     return true
   }
 
-  const getDayClasses = (date: Date): string => {
-    const availability = getDateAvailability(date)
-    const isSelected = selectedDate && isSameDay(date, selectedDate)
-    const canSelect = canSelectDate(date)
-    const isCurrentMonth = date.getMonth() === currentDate.getMonth()
-    
-    let classes = 'calendar-day '
-    
+  const getDayClasses = (
+    date: Date,
+    isSelected: boolean,
+    canSelect: boolean,
+    isCurrentMonth: boolean,
+    availability: 'available' | 'occupied' | 'partial' | 'competition'
+  ): string => {
+    const baseClasses = "min-h-[120px] p-3 flex flex-col justify-between text-left transition-all duration-200"
+
     if (!isCurrentMonth) {
-      classes += 'text-gray-400 '
+      return `${baseClasses} bg-gray-50/50 text-gray-300 cursor-not-allowed`
     }
-    
+
     if (isSelected) {
-      classes += 'selected '
-    } else if (availability === 'available' && canSelect) {
-      classes += 'available '
-    } else if (availability === 'partial' && canSelect) {
-      classes += 'partial '
-    } else if (availability === 'competition') {
-      classes += 'competition '
-    } else {
-      classes += 'occupied '
+      return `${baseClasses} bg-semin-blue/10 text-semin-blue ring-2 ring-semin-blue font-medium shadow-sm`
     }
-    
-    return classes
+
+    // Match the legend colors for each state
+    switch (availability) {
+      case 'available':
+        return `${baseClasses} bg-green-50/50 hover:bg-green-100/50 text-gray-700 hover:text-green-800 cursor-pointer ring-1 ring-green-100 hover:ring-green-200`
+      case 'occupied':
+        return `${baseClasses} bg-red-50/50 text-gray-500 cursor-not-allowed ring-1 ring-red-100`
+      case 'partial':
+        return `${baseClasses} bg-yellow-50/50 hover:bg-yellow-100/50 text-gray-700 hover:text-yellow-800 cursor-pointer ring-1 ring-yellow-100 hover:ring-yellow-200`
+      case 'competition':
+        return `${baseClasses} bg-purple-50/50 text-purple-700 cursor-not-allowed ring-1 ring-purple-100`
+      default:
+        return `${baseClasses} bg-gray-50/50 text-gray-400 cursor-not-allowed`
+    }
   }
 
   return (
-    <div className="space-y-0">
-      <div className="flex justify-between items-center mb-4">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold text-semin-blue">
-          {(() => {
-            const months = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 
-                           'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
-            return `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-          })()} • Lovné místo {spot.number}
+          {format(monthStart, 'MMMM yyyy', { locale: cs })} • Lovné místo {spot.number}
         </h3>
-        <div className="flex space-x-6 text-sm">
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-green-50 border border-green-200 rounded mr-2"></div>
-            <span className="font-medium text-semin-gray">Volné</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-red-50 border border-red-200 rounded mr-2"></div>
-            <span className="font-medium text-semin-gray">Obsazené</span>
-          </div>
-          <div className="flex items-center">  
-            <div className="w-4 h-4 rounded mr-2 border border-gray-300" style={{
-              background: 'linear-gradient(135deg, #dcfce7 50%, #fef3c7 50%)'
-            }}></div>
-            <span className="font-medium text-semin-gray">Částečně</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded mr-2"></div>
-            <span className="font-medium text-semin-gray">Závod</span>
-          </div>
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => setCurrentDate(addDays(currentDate, -30))} 
+            className="p-2 rounded-xl hover:bg-gray-100 text-gray-600 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button 
+            onClick={() => setCurrentDate(new Date())} 
+            className="px-4 py-2 text-sm font-medium text-semin-blue bg-semin-blue/10 rounded-xl hover:bg-semin-blue/20 transition-colors"
+          >
+            Dnes
+          </button>
+          <button 
+            onClick={() => setCurrentDate(addDays(currentDate, 30))} 
+            className="p-2 rounded-xl hover:bg-gray-100 text-gray-600 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Calendar Header */}
-      <div className="grid grid-cols-7 bg-semin-light-gray border border-gray-200 rounded-t-xl">
-        {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(day => (
-          <div key={day} className="py-3 text-sm font-bold text-semin-blue text-center border-r border-gray-200 last:border-r-0">
-            {day}
-          </div>
-        ))}
+      <div className="flex justify-end space-x-6 text-sm">
+        <div className="flex items-center">
+          <div className="w-3 h-3 rounded-full bg-green-100 ring-1 ring-green-200 mr-2"></div>
+          <span className="text-gray-600">Volné</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-3 h-3 rounded-full bg-red-100 ring-1 ring-red-200 mr-2"></div>
+          <span className="text-gray-600">Obsazené</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-3 h-3 rounded-full bg-yellow-100 ring-1 ring-yellow-200 mr-2"></div>
+          <span className="text-gray-600">Částečně</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-3 h-3 rounded-full bg-purple-100 ring-1 ring-purple-200 mr-2"></div>
+          <span className="text-gray-600">Závod</span>
+        </div>
       </div>
 
-      {/* Calendar Days */}
-      <div className="grid grid-cols-7 border-l border-r border-b border-gray-200 rounded-b-xl bg-white">
-        {calendarDays.map(date => {
-          const canSelect = canSelectDate(date)
-          const isCurrentMonth = date.getMonth() === currentDate.getMonth()
-          return (
-            <button
-              key={date.toISOString()}
-              onClick={() => canSelect && onDateSelect(date)}
-              className={`${getDayClasses(date)} border-r border-b border-gray-200 last:border-r-0 ${!isCurrentMonth ? 'bg-gray-50' : ''}`}
-              disabled={!canSelect}
-            >
-              <div className="flex flex-col items-center">
-                <span className={`text-sm font-medium ${!isCurrentMonth ? 'text-gray-400' : ''}`}>
-                  {format(date, 'd')}
-                </span>
-              </div>
-            </button>
-          )
-        })}
+      <div className="rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100">
+        {/* Calendar Header */}
+        <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-100">
+          {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(day => (
+            <div key={day} className="py-3 text-sm font-medium text-gray-600 text-center">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar Days */}
+        <div className="grid grid-cols-7 divide-x divide-y divide-gray-100">
+          {calendarDays.map(date => {
+            const isSelected = !!(selectedDate && isSameDay(date, selectedDate));
+            const canSelect = canSelectDate(date);
+            const availability = getDateAvailability(date);
+            const isCurrentMonth = date.getMonth() === monthStart.getMonth();
+            const dateKey = format(date, 'yyyy-MM-dd');
+            const weather = weatherData[dateKey];
+            
+            return (
+              <button
+                key={date.toISOString()}
+                onClick={() => canSelect && onDateSelect(date)}
+                className={getDayClasses(date, isSelected, canSelect, isCurrentMonth, availability)}
+                disabled={!canSelect || !isCurrentMonth}
+              >
+                <div className="flex items-center justify-between">
+                  <div className={`font-medium ${
+                    isToday(date) 
+                      ? 'bg-semin-blue text-white w-7 h-7 rounded-full flex items-center justify-center' 
+                      : ''
+                  }`}>
+                    {format(date, 'd')}
+                  </div>
+                  {isCurrentMonth && weather && (
+                    <div className="text-2xl">{weather.icon}</div>
+                  )}
+                </div>
+                {isCurrentMonth && weather && (
+                  <div className="text-right">
+                    <p className="text-xs font-medium text-gray-600">{weather.temperature}°C</p>
+                  </div>
+                )}
+                {isCurrentMonth && loadingWeather[dateKey] && (
+                  <div className="w-4 h-4 border-2 border-semin-blue/20 border-t-semin-blue rounded-full animate-spin mx-auto mt-2"></div>
+                )}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Competition Notice */}
       {competitions.length > 0 && (
-        <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-          <h4 className="font-medium text-purple-800 mb-2">Nadcházející závody</h4>
-          <div className="space-y-1 text-sm text-purple-700">
-            {competitions.map(competition => (
-              <div key={competition.id}>
-                <strong>{format(new Date(competition.date), 'dd.MM.yyyy', { locale: cs })}:</strong> {competition.name}
-              </div>
-            ))}
-          </div>
+        <div className="mt-6 p-4 bg-purple-50/50 border border-purple-200 rounded-2xl text-sm">
+          <h4 className="font-bold text-purple-800 mb-2">Nadcházející závody</h4>
+          {competitions.map(comp => (
+            <div key={comp.id} className="text-purple-700">
+              <strong>{format(new Date(comp.date), 'dd.MM.yyyy')}:</strong> {comp.name}
+            </div>
+          ))}
           <p className="text-xs text-purple-600 mt-2">
-            V dny závodů nelze rezervovat lovná místa pro běžný rybolov. <a href="#competitions" className="text-purple-800 font-semibold underline hover:text-purple-900 transition-colors">Přihlaste se!</a>
+            V dny závodů nelze rezervovat lovná místa. <a href="#competitions" className="font-semibold underline">Přihlaste se!</a>
           </p>
         </div>
       )}
 
       {/* Booking Summary */}
       {selectedDate && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-6 p-4 bg-blue-50/50 border border-blue-200 rounded-2xl text-sm">
           <h4 className="font-semibold text-blue-800 mb-2">Shrnutí rezervace</h4>
-          <div className="space-y-1 text-sm text-blue-700">
+          <div className="space-y-1 text-blue-700">
             <div><strong>Datum:</strong> {format(selectedDate, 'EEEE, d. MMMM yyyy', { locale: cs })}</div>
             <div><strong>Délka:</strong> {
               duration === 'day' ? 'Jeden den (6:00 - 22:00)' :

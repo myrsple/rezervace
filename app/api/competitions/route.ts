@@ -4,12 +4,46 @@ import { prisma } from '../../../lib/prisma'
 export async function GET() {
   try {
     console.log('Fetching competitions...')
-    const competitions = await prisma.competition.findMany({
+    let competitions = await prisma.competition.findMany({
       include: {
         registrations: true
       },
       orderBy: { date: 'asc' }
     })
+    
+    // If no competitions exist, create sample ones
+    if (competitions.length === 0) {
+      console.log('No competitions found, creating sample competitions...')
+      
+      const sampleCompetitions = [
+        {
+          name: 'Jarní závody 2025',
+          date: new Date('2025-04-15T08:00:00Z'),
+          capacity: 30,
+          entryFee: 200,
+          isActive: true
+        },
+        {
+          name: 'Letní turnaj',
+          date: new Date('2025-07-20T06:00:00Z'),
+          capacity: 50,
+          entryFee: 300,
+          isActive: true
+        }
+      ]
+      
+      for (const comp of sampleCompetitions) {
+        await prisma.competition.create({ data: comp })
+      }
+      
+      // Fetch again after creating
+      competitions = await prisma.competition.findMany({
+        include: {
+          registrations: true
+        },
+        orderBy: { date: 'asc' }
+      })
+    }
     
     console.log('Found competitions:', competitions.length)
     return NextResponse.json(competitions)

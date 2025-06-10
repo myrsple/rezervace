@@ -3,6 +3,7 @@ import { prisma } from '../../../lib/prisma'
 
 export async function GET() {
   try {
+    console.log('Fetching competitions...')
     const competitions = await prisma.competition.findMany({
       include: {
         registrations: true
@@ -10,11 +11,18 @@ export async function GET() {
       orderBy: { date: 'asc' }
     })
     
+    console.log('Found competitions:', competitions.length)
     return NextResponse.json(competitions)
   } catch (error) {
-    console.error('Error fetching competitions:', error)
+    console.error('Detailed error fetching competitions:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorName = error instanceof Error ? error.name : 'UnknownError'
     return NextResponse.json(
-      { error: 'Failed to fetch competitions' },
+      { 
+        error: 'Failed to fetch competitions',
+        details: errorMessage,
+        name: errorName
+      },
       { status: 500 }
     )
   }

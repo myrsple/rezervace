@@ -19,6 +19,7 @@ export default function ReservationSystem() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [weatherForecast, setWeatherForecast] = useState<WeatherData | null>(null)
+  const [availableHalf, setAvailableHalf] = useState<'morning' | 'evening' | null>(null)
 
   useEffect(() => {
     fetchFishingSpots()
@@ -71,10 +72,14 @@ export default function ReservationSystem() {
     setSelectedDate(null) // Reset date when spot changes
   }
 
-  const handleDateSelect = (date: Date) => {
+  const handleDateSelect = (date: Date, half: 'morning' | 'evening' | null | undefined) => {
     setSelectedDate(date)
-    
-    // Load weather forecast for selected date
+    setAvailableHalf(half ?? null)
+    if (half === 'morning') {
+      setSelectedTimeSlot('morning')
+    } else if (half === 'evening') {
+      setSelectedTimeSlot('evening')
+    }
     const forecast = getWeatherForDate(date)
     setWeatherForecast(forecast)
   }
@@ -159,11 +164,8 @@ export default function ReservationSystem() {
                               <button
                   type="button"
                   onClick={() => setSelectedDuration('day')}
-                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${
-                    selectedDuration === 'day'
-                      ? 'border-semin-blue bg-semin-light-blue shadow-card'
-                      : 'border-gray-200 hover:border-semin-blue hover:shadow-card'
-                  }`}
+                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${selectedDuration === 'day' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}${availableHalf ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                  disabled={!!availableHalf}
                 >
                   <div className={`font-bold text-lg ${selectedDuration === 'day' ? 'text-semin-blue' : 'text-semin-gray'}`}>
                     Jeden den
@@ -177,36 +179,19 @@ export default function ReservationSystem() {
                 <button
                   type="button"
                   onClick={() => setSelectedDuration('24h')}
-                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${
-                    selectedDuration === '24h'
-                      ? 'border-semin-blue bg-semin-light-blue shadow-card'
-                      : 'border-gray-200 hover:border-semin-blue hover:shadow-card'
-                  }`}
+                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${selectedDuration === '24h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
                 >
-                  <div className={`font-bold text-lg ${selectedDuration === '24h' ? 'text-semin-blue' : 'text-semin-gray'}`}>
-                    24 hodin
-                  </div>
-                  <div className={`text-sm ${selectedDuration === '24h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>
-                    Celý den
-                  </div>
+                  <div className={`font-bold text-lg ${selectedDuration === '24h' ? 'text-semin-blue' : 'text-semin-gray'}`}>24 hodin</div>
                   <div className="text-2xl font-bold text-semin-green">600 Kč</div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSelectedDuration('48h')}
-                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${
-                    selectedDuration === '48h'
-                      ? 'border-semin-blue bg-semin-light-blue shadow-card'
-                      : 'border-gray-200 hover:border-semin-blue hover:shadow-card'
-                  }`}
+                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${selectedDuration === '48h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}${availableHalf ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                  disabled={!!availableHalf}
                 >
-                  <div className={`font-bold text-lg ${selectedDuration === '48h' ? 'text-semin-blue' : 'text-semin-gray'}`}>
-                    48 hodin
-                  </div>
-                  <div className={`text-sm ${selectedDuration === '48h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>
-                    Dva celé dny
-                  </div>
+                  <div className={`font-bold text-lg ${selectedDuration === '48h' ? 'text-semin-blue' : 'text-semin-gray'}`}>48 hodin</div>
                   <div className="text-2xl font-bold text-semin-green">1000 Kč</div>
                 </button>
             </div>
@@ -222,22 +207,16 @@ export default function ReservationSystem() {
                 <button
                   type="button"
                   onClick={() => setSelectedTimeSlot('morning')}
-                  className={`p-4 border-2 rounded-2xl text-center transition-all duration-200 font-medium ${
-                    selectedTimeSlot === 'morning'
-                      ? 'border-semin-blue bg-semin-light-blue text-semin-blue shadow-card'
-                      : 'border-gray-200 bg-white text-semin-gray hover:border-semin-blue hover:shadow-card'
-                  }`}
+                  className={`p-4 border-2 rounded-2xl text-center transition-all duration-200 font-medium ${selectedTimeSlot === 'morning' ? 'border-semin-blue bg-semin-light-blue text-semin-blue shadow-card' : 'border-gray-200 bg-white text-semin-gray hover:border-semin-blue hover:shadow-card'}${availableHalf === 'evening' ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                  disabled={availableHalf === 'evening'}
                 >
                   Ráno (6:00)
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedTimeSlot('evening')}
-                  className={`p-4 border-2 rounded-2xl text-center transition-all duration-200 font-medium ${
-                    selectedTimeSlot === 'evening'
-                      ? 'border-semin-blue bg-semin-light-blue text-semin-blue shadow-card'
-                      : 'border-gray-200 bg-white text-semin-gray hover:border-semin-blue hover:shadow-card'
-                  }`}
+                  className={`p-4 border-2 rounded-2xl text-center transition-all duration-200 font-medium ${selectedTimeSlot === 'evening' ? 'border-semin-blue bg-semin-light-blue text-semin-blue shadow-card' : 'border-gray-200 bg-white text-semin-gray hover:border-semin-blue hover:shadow-card'}${availableHalf === 'morning' ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                  disabled={availableHalf === 'morning'}
                 >
                   Večer (18:00)
                 </button>

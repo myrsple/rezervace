@@ -40,7 +40,7 @@ export interface BookingFormData {
 
 export interface CalendarDay {
   date: Date
-  availability: 'available' | 'occupied' | 'partial' | 'competition'
+  availability: 'available' | 'occupied' | 'competition'
   reservations: Reservation[]
 }
 

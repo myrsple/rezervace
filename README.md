@@ -63,9 +63,10 @@ Po přihlášení uvidíte tři hlavní záložky:
 
 - Potřebuju přesný popis time slots pro odělání rezervací a překlenů mezi dny a půldny
 - Jaké jsou skutečné ceny?
-- Upravíme nějak texty?
+- Upravíme nějak texty / layout?
 - Jaké skutečně nabízíte rental a prodeje a za jaké ceny?
 - Jaké jsou skutečné platební údaje?
 - Stačí takhle funkce, chybí něco dalšího? Můžem cokoliv přidat
-- Mobil a tablet asi ještě úplně nebudou fungovat, poladíme až bude final verze webové aplikace
+- Mobil a tablet jsem ještě neoptimalizoval ale funguje to docela ok
+- Emailové funkce zatím nefungují vůbec, ale můžeme napojit
 - Podařilo se vám něco rozbít, nebo jste se někde zasekli?

@@ -3,6 +3,22 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
+  // --- Add regular fishing spots (1-15) ---
+  for (let number = 1; number <= 15; number++) {
+    const spotData = {
+      number,
+      name: `Lovné místo ${number}`,
+      description: `Standardní lovné místo číslo ${number}.`,
+      isActive: true,
+    };
+    await prisma.fishingSpot.upsert({
+      where: { number },
+      update: spotData,
+      create: spotData,
+    });
+  }
+  console.log('Standardní lovná místa 1-15 byla přidána nebo aktualizována.');
+
   // --- Only add/update the VIP spot ---
   const vipNumber = 99;
   const vipData = {

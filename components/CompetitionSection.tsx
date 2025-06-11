@@ -13,8 +13,15 @@ export default function CompetitionSection() {
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null)
 
   useEffect(() => {
-    fetchCompetitions()
-  }, [])
+    let isMounted = true;
+    setLoading(true);
+    const minSpinnerTime = new Promise((resolve) => setTimeout(resolve, 1000));
+    const fetchPromise = fetchCompetitions();
+    Promise.all([minSpinnerTime, fetchPromise]).then(() => {
+      if (isMounted) setLoading(false);
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   const fetchCompetitions = async () => {
     setLoading(true)

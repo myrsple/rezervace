@@ -39,7 +39,14 @@ export default function AdminDashboard() {
   const [competitionSortConfigs, setCompetitionSortConfigs] = useState<Record<number, { key: string; direction: 'asc' | 'desc' }>>({})
 
   useEffect(() => {
-    fetchData()
+    let isMounted = true;
+    setLoading(true);
+    const minSpinnerTime = new Promise((resolve) => setTimeout(resolve, 1000));
+    const fetchPromise = fetchData();
+    Promise.all([minSpinnerTime, fetchPromise]).then(() => {
+      if (isMounted) setLoading(false);
+    });
+    return () => { isMounted = false; };
   }, [])
 
   const fetchData = async () => {

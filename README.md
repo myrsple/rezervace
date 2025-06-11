@@ -1,4 +1,4 @@
-# Administrátorský manuál – Rezervační systém rybářství
+# Manuál pro administrátory
 
 Tento dokument slouží jako přehledný návod pro správu rezervačního systému lovných míst a závodů. Je určen pro administrátory a správce systému.
 

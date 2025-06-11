@@ -69,4 +69,5 @@ Po přihlášení uvidíte tři hlavní záložky:
 - Stačí takhle funkce, chybí něco dalšího? Můžem cokoliv přidat
 - Mobil a tablet jsem ještě neoptimalizoval ale funguje to docela ok
 - Emailové funkce zatím nefungují vůbec, ale můžeme napojit
+- Až to bude ready, nahrajeme existující rezervace a přesuneme rezervační stránku na rezervace.rybysemin.cz
 - Podařilo se vám něco rozbít, nebo jste se někde zasekli?

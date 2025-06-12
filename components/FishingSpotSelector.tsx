@@ -39,7 +39,7 @@ export default function FishingSpotSelector({
           {(() => {
             const isVip = spot.name === 'Lovné místo VIP'
             const topLabel = isVip ? 'LM VIP' : `LM ${spot.number}`
-            const bottomLabel = isVip || (spot.number && spot.number <= 6) ? 'K rezervaci' : 'Denní rybaření'
+            const bottomLabel = isVip || (spot.number && spot.number <= 6) ? 'Rezervace' : 'Denní rybaření'
             return (
               <div className="flex flex-col items-center justify-center">
                 <span className="text-base font-bold mb-0.5">{topLabel}</span>

@@ -126,31 +126,14 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    // Check for conflicts
+    // Check for conflicts – treat endDate as exclusive (switch-over at noon)
+    // Two intervals [a,b) and [c,d) overlap iff a < d and b > c
     const conflictingReservations = await prisma.reservation.findMany({
       where: {
         spotId: spotId,
         status: { not: 'CANCELLED' },
-        OR: [
-          {
-            AND: [
-              { startDate: { lte: startDateTime } },
-              { endDate: { gte: startDateTime } }
-            ]
-          },
-          {
-            AND: [
-              { startDate: { lte: endDate } },
-              { endDate: { gte: endDate } }
-            ]
-          },
-          {
-            AND: [
-              { startDate: { gte: startDateTime } },
-              { endDate: { lte: endDate } }
-            ]
-          }
-        ]
+        startDate: { lt: endDate },
+        endDate:   { gt: startDateTime }
       }
     })
 

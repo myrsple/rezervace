@@ -68,12 +68,14 @@ export default function ReservationCalendar({
     }
   }
 
+  // Match by business-facing "number" instead of internal DB id to avoid
+  // potential offsets (e.g., VIP spot inserted first).
   const spotReservations = useMemo(() => {
     return reservations.filter(reservation => 
-      reservation.spotId === spot.id && 
+      reservation.fishingSpot?.number === spot.number && 
       reservation.status !== 'CANCELLED'
     )
-  }, [reservations, spot.id])
+  }, [reservations, spot.number])
 
   const getDateAvailability = (date: Date): 'available' | 'occupied' | 'competition' | 'past' => {
     if (competitionsLoading) return 'past'
@@ -86,13 +88,29 @@ export default function ReservationCalendar({
     }
 
     const hasCompetition = competitions.some(competition => {
-      const start = startOfDay(new Date(competition.date))
-      const end = competition.endDate ? startOfDay(new Date(competition.endDate)) : startOfDay(addHours(new Date(competition.date), 24))
-      const isInRange = dayStart >= start && dayStart <= end
+      const compStart = new Date(competition.date)
+      const compEnd = competition.endDate ? new Date(competition.endDate) : addHours(compStart, 24)
 
-      if (!isInRange) return false
+      // Calculate duration in ms
+      const durationMs = compEnd.getTime() - compStart.getTime()
 
-      const visibilityEndDate = addHours(end, 48)
+      // Single-day competition (≤ 24 h) → block ONLY the start day
+      if (durationMs <= 24 * 60 * 60 * 1000) {
+        const compStartDay = startOfDay(compStart)
+        if (dayStart.getTime() !== compStartDay.getTime()) return false
+
+        const visibilityEndDate = addHours(compEnd, 48)
+        const now = new Date()
+        return competition.isActive && isBefore(now, visibilityEndDate)
+      }
+
+      // Multi-day competition → block the whole inclusive date range
+      const rangeStart = startOfDay(compStart)
+      const rangeEnd = startOfDay(compEnd)
+      const inRange = dayStart >= rangeStart && dayStart <= rangeEnd
+      if (!inRange) return false
+
+      const visibilityEndDate = addHours(compEnd, 48)
       const now = new Date()
       return competition.isActive && isBefore(now, visibilityEndDate)
     })
@@ -113,9 +131,9 @@ export default function ReservationCalendar({
       return 'available'
     }
 
-    const hasFullDayReservation = dayReservations.some(reservation => 
-      reservation.duration === '24h' || reservation.duration === '48h'
-    )
+    // Treat any non-"day" duration as a full-day / multi-day reservation so legacy
+    // strings like "48 hodin" are also recognised.
+    const hasFullDayReservation = dayReservations.some(reservation => reservation.duration !== 'day')
     const hasDayOnlyReservation = dayReservations.some(reservation => 
       reservation.duration === 'day'
     )
@@ -146,7 +164,7 @@ export default function ReservationCalendar({
     const isHalfBooked = (day: Date, half: 'morning' | 'evening'): boolean => {
       const reservations = spotReservations.filter(res => {
         const resStart = new Date(res.startDate);
-        const resEnd = new Date(res.endDate);
+        const resEnd = new Date(new Date(res.endDate).getTime() - 1);
         const dayStart = startOfDay(day);
         const dayEnd = addDays(dayStart,1);
         return resStart < dayEnd && resEnd > dayStart;
@@ -163,7 +181,7 @@ export default function ReservationCalendar({
       }
       return reservations.some(res => {
         const resStart = new Date(res.startDate);
-        const resEnd = new Date(res.endDate);
+        const resEnd = new Date(new Date(res.endDate).getTime() - 1);
         return resEnd > halfStart && resStart < halfEnd;
       });
     }
@@ -267,6 +285,10 @@ export default function ReservationCalendar({
           <span className="text-gray-600">Volné</span>
         </div>
         <div className="flex items-center">
+          <div className="w-3 h-3 rounded bg-yellow-200 ring-1 ring-yellow-300 mr-1.5"></div>
+          <span className="text-gray-600">Zvolené</span>
+        </div>
+        <div className="flex items-center">
           <div className="w-3 h-3 rounded bg-red-200 ring-1 ring-red-300 mr-1.5"></div>
           <span className="text-gray-600">Obsazené</span>
         </div>
@@ -324,7 +346,10 @@ export default function ReservationCalendar({
             let eveningBooked = false;
             for (const res of dayReservations) {
               const resStart = new Date(res.startDate)
-              const resEnd = new Date(res.endDate)
+              // Treat reservation end as exclusive (switchovers at noon)
+              const resEnd = new Date(new Date(res.endDate).getTime() - 1)
+              const dayStart = startOfDay(date)
+              const dayEnd = addDays(dayStart, 1)
               if (resEnd > morningStart && resStart < morningEnd) {
                 morningBooked = true
               }
@@ -469,11 +494,11 @@ export default function ReservationCalendar({
                 {/* Preview overlay for current selection – pale blue fill, no border */}
                 {isInSelectedRange && selectedHalf && (
                   selectedHalf === 'full' ? (
-                    <div className="absolute inset-0 bg-red-100 z-5" style={{opacity:0.65}}></div>
+                    <div className="absolute inset-0 bg-yellow-200 z-5" style={{opacity:0.65}}></div>
                   ) : selectedHalf === 'morning' ? (
-                    <div className="absolute inset-y-0 left-0 w-1/2 bg-red-100 rounded-r-md z-5" style={{opacity:0.65}}></div>
+                    <div className="absolute inset-y-0 left-0 w-1/2 bg-yellow-200 rounded-r-md z-5" style={{opacity:0.65}}></div>
                   ) : (
-                    <div className="absolute inset-y-0 right-0 w-1/2 bg-red-100 rounded-l-md z-5" style={{opacity:0.65}}></div>
+                    <div className="absolute inset-y-0 right-0 w-1/2 bg-yellow-200 rounded-l-md z-5" style={{opacity:0.65}}></div>
                   )
                 )}
               </button>

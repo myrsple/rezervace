@@ -428,7 +428,13 @@ export default function AdminDashboard() {
       reservation.customerPhone,
       reservation.rentedGear ? getGearNames(reservation.rentedGear).join('; ') : '—',
       reservation.variableSymbol || '',
-      `#${reservation.spotId}`,
+      (() => {
+        const num = reservation.fishingSpot?.number
+        if (num === 99 || reservation.fishingSpot?.name === 'Lovné místo VIP') {
+          return 'VIP'
+        }
+        return num ? `#${num}` : `#${reservation.spotId}`
+      })(),
       format(new Date(reservation.startDate), 'd.M.yyyy'),
       reservation.duration === 'day' ? 'Jeden den' : 
        reservation.duration === '24h' ? '24 hodin' : '48 hodin',
@@ -813,7 +819,15 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                       {/* Místo */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#{reservation.spotId}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {(() => {
+                          const num = reservation.fishingSpot?.number
+                          if (num === 99 || reservation.fishingSpot?.name === 'Lovné místo VIP') {
+                            return 'VIP'
+                          }
+                          return num ? `#${num}` : `#${reservation.spotId}`
+                        })()}
+                      </td>
                       {/* Datum a délka */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">

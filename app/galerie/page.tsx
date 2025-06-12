@@ -1,7 +1,8 @@
 import React from 'react'
 import type { Metadata } from 'next'
-import FacebookFeed from '@/components/FacebookFeed'
 import GalleryGrid from '@/components/GalleryGrid'
+import fs from 'fs'
+import path from 'path'
 
 export const metadata: Metadata = {
   title: 'Galerie | Ryby Semín',
@@ -9,28 +10,40 @@ export const metadata: Metadata = {
   keywords: ['Ryby Semín', 'fotogalerie', 'sportovní rybolov', 'Semín', 'rybník Tomášek'],
 }
 
-const galleryImages = [
-  '/gallery2.JPG',
-  '/gallery3.JPG',
-  '/gallery4.JPG',
-  '/gallery1.JPG',
-]
+// Dynamically read all images placed in /public/galerie
+// This runs on the server, so Node's fs/path are available.
+function loadGalleryImages(): string[] {
+  const dir = path.join(process.cwd(), 'public', 'galerie')
+
+  if (!fs.existsSync(dir)) return []
+
+  const files = fs
+    .readdirSync(dir)
+    .filter((file) => /\.(png|jpe?g|gif|webp|svg)$/i.test(file))
+
+  // Sort by leading number if present (natural order 1,2,10) else alphabetically
+  files.sort((a, b) => {
+    const numA = parseInt(a.match(/^(\d+)/)?.[1] || 'Infinity', 10)
+    const numB = parseInt(b.match(/^(\d+)/)?.[1] || 'Infinity', 10)
+    if (numA !== numB) return numA - numB
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+  })
+
+  return files.map((file) => `/galerie/${encodeURIComponent(file)}`)
+}
+
+const galleryImages = loadGalleryImages()
 
 export default function GalleryPage() {
   return (
     <main className="max-w-7xl mx-auto px-4 py-10">
-      <div className="grid lg:grid-cols-[1fr_350px] gap-8">
+      <div className="grid gap-8">
         {/* Left column */}
         <article className="prose max-w-none prose-blue">
           <h1 className="text-4xl font-bold text-blue-700 mb-6">Galerie</h1>
           {/* Image grid */}
           <GalleryGrid images={galleryImages} />
         </article>
-
-        {/* Facebook feed */}
-        <aside className="lg:sticky lg:top-32">
-          <FacebookFeed />
-        </aside>
       </div>
     </main>
   )

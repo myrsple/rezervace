@@ -16,9 +16,8 @@ export default function AboutPage() {
           <h1 className="text-4xl font-bold text-blue-700 mb-6">O nás</h1>
           <p>
             Jsme rodinný tým nadšenců, který provozuje sportovní rybolov a plážový areál u průtočné
-            vodní nádrže&nbsp;<strong>Tomášek</strong> –⁠ místní ji znají také jako&nbsp;<em>Bajkal</em>&nbsp;nebo&nbsp;<em>Kuklovna</em>. Rybník najdete v&nbsp;Semíně, necelých osm kilometrů od
-            Přelouče, uprostřed borových lesů a cyklostezek. Už více než dvacet&nbsp;let se zde
-            staráme o&nbsp;klidné prostředí pro rybáře, rodiny s&nbsp;dětmi i&nbsp;rekreační
+            vodní nádrže&nbsp;<strong>Tomášek</strong> – místní ji znají také jako <em>Baikal</em> nebo <em>Kuklovna</em>. Rybník najdete v&nbsp;Semíně, necelých osm kilometrů od
+            Přelouče, uprostřed borových lesů a cyklostezek. Zajišťujeme klidné prostředí pro rybáře, rodiny s&nbsp;dětmi i&nbsp;rekreační
             plavce.
           </p>
 
@@ -42,17 +41,14 @@ export default function AboutPage() {
             Josefem. Původní plocha&nbsp;1,5&nbsp;ha se roku&nbsp;2001 rozšířila na dnešních
             přibližně&nbsp;5&nbsp;ha. Od samého počátku jsme dbali na pozvolné břehy a čistou vodu –
             nádrž je průtočná a&nbsp;voda se vymění přibližně jednou za&nbsp;14&nbsp;dnů, takže se u
-            nás nevyskytují sinice. Kvalitu pravidelně testujeme a&nbsp;k osvěžení slouží i venkovní
-            sprcha s&nbsp;pitnou vodou.
+            nás nevyskytují sinice. Kvalitu pravidelně testujeme a&nbsp;k osvěžení slouží i venkovní sprcha přímo u pláže.
           </p>
 
           <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Co u nás najdete</h2>
           <ul className="list-disc pl-6 space-y-1">
-            <li>16&nbsp;lovných míst pro&nbsp;<strong>chyť&nbsp;a&nbsp;pusť</strong> rybolov</li>
+            <li>15&nbsp;lovných míst pro&nbsp;<strong>chyť&nbsp;a&nbsp;pusť</strong> rybolov</li>
             <li>pláž s&nbsp;občerstvením a&nbsp;točenou zmrzlinou</li>
-            <li>čerstvě uzené ryby a&nbsp;další speciality z&nbsp;našeho kiosku</li>
             <li>dětské hřiště a&nbsp;pozvolný vstup do vody</li>
-            <li>bezbariérový přístup k&nbsp;vybraným lovným místům</li>
             <li>pravidelné závody, hudební večery a&nbsp;projekce sportovních přenosů</li>
           </ul>
 
@@ -60,7 +56,7 @@ export default function AboutPage() {
           <p>
             Kromě bohaté obsádky kaprů, amurů či dravců oceňují naši návštěvníci především klid,
             čistotu a&nbsp;rodinnou atmosféru. Ať už přijedete na&nbsp;denní rybolov, víkend s
-            karavanem, nebo se jen vykoupat a&nbsp;dát si uzenou rybu, vždycky vás přivítáme s
+            karavanem, nebo se jen vykoupat, vždycky vás přivítáme s
             úsměvem a&nbsp;rádi poradíme, kde to právě nejlépe bere.
           </p>
 
@@ -76,10 +72,38 @@ export default function AboutPage() {
             Těšíme se na&nbsp;vaši návštěvu! <br />
             Tým&nbsp;Ryby&nbsp;Semín
           </p>
+
+          {/* Rezervace info */}
+          <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Rezervace a platby</h2>
+          <p>
+            Denní i vícedenní povolenky vyřídíte na stránce Rezervujte nebo osobně přímo na pláži u rybníka Tomášek. Zaplatit můžete hotově nebo QR platbou. Uvedené ceny zahrnují DPH.
+          </p>
+
+          <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Firemní akce a školní výlety</h2>
+          <p>
+            Chystáte závody, firemní teambuilding nebo školní výlet? Zavolejte nám na 773 291 941 a vypracujeme vám individuální nabídku.
+          </p>
         </article>
         <aside className="lg:sticky lg:top-32">
           <FacebookFeed />
         </aside>
+      </div>
+
+      {/* Kudy z nudy badge */}
+      <div className="mt-14 flex justify-center">
+        <a
+          href="https://www.kudyznudy.cz/aktivity/sportovni-rybolov-semin"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block transition-transform duration-200 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-semin-blue/30"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/kzn.svg"
+            alt="Tip na výlet – Kudy z nudy"
+            className="h-12 sm:h-16 md:h-20"
+          />
+        </a>
       </div>
     </main>
   )

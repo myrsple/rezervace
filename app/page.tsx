@@ -16,7 +16,7 @@ export default function Home() {
         <header className="text-center mb-12">
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
             Sportovní rybolov na vodní nádrži Tomášek, zasazený do krásné přírody nedaleko Přelouče. 
-            Nabízíme 16 lovných míst s flexibilní dobou rezervace a pořádáme pravidelné závody.
+            Nabízíme 15 lovných míst s flexibilní dobou rezervace a pořádáme pravidelné závody.
           </p>
           {/* Info Cards Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">

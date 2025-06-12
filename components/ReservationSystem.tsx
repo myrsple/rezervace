@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import FishingSpotSelector from './FishingSpotSelector'
 import ReservationCalendar from './ReservationCalendar'
 import BookingForm from './BookingForm'
@@ -20,6 +21,9 @@ export default function ReservationSystem() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [weatherForecast, setWeatherForecast] = useState<WeatherData | null>(null)
+  // Light-box for the lovná místa map
+  const [showMap, setShowMap] = useState(false)
+  const [mapZoom, setMapZoom] = useState(1)
 
   const fetcher = (url:string)=>fetch(url).then(r=>r.json())
   const { data: competitionsData } = useSWR('/api/competitions', fetcher)
@@ -120,7 +124,7 @@ export default function ReservationSystem() {
     const dateToCheck = baseDate ?? selectedDate
     if (!dateToCheck || !selectedSpot) return true
 
-    const spotRes = reservations.filter(r => r.spotId === selectedSpot.id && r.status !== 'CANCELLED')
+    const spotRes = reservations.filter(r => r.fishingSpot?.number === selectedSpot.number && r.status !== 'CANCELLED')
 
     const isHalfBooked = (date: Date, half: 'morning' | 'evening') => {
       const halfStart = new Date(date)
@@ -134,7 +138,7 @@ export default function ReservationSystem() {
         halfEnd.setHours(0,0,0,0)
       }
       return spotRes.some(res=>{
-        const s = new Date(res.startDate); const e = new Date(res.endDate)
+        const s = new Date(res.startDate); const e = new Date(new Date(res.endDate).getTime()-1)
         return e>halfStart && s<halfEnd
       })
     }
@@ -142,10 +146,20 @@ export default function ReservationSystem() {
     const isCompetitionDay = (d: Date)=>{
       if (!competitionsData) return false
       return competitionsData.some((c: any)=>{
-        const compStart = startOfDay(new Date(c.date))
-        const compEnd = c.endDate ? startOfDay(new Date(c.endDate)) : startOfDay(addHours(new Date(c.date),24))
-        const day = startOfDay(d)
-        return day >= compStart && day <= compEnd
+        const compStart = new Date(c.date)
+        const compEnd = c.endDate ? new Date(c.endDate) : addHours(compStart, 24)
+
+        // Single-day competition (≤24 h) blocks only the start calendar day
+        const durationMs = compEnd.getTime() - compStart.getTime()
+        const dayStart = startOfDay(d)
+        if (durationMs <= 24*60*60*1000) {
+          return dayStart.getTime() === startOfDay(compStart).getTime()
+        }
+
+        // Multi-day competition blocks a range
+        const rangeStart = startOfDay(compStart)
+        const rangeEnd = startOfDay(compEnd)
+        return dayStart >= rangeStart && dayStart <= rangeEnd
       })
     }
 
@@ -191,13 +205,13 @@ export default function ReservationSystem() {
     if (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) {
       return false
     }
-    const spotRes = reservations.filter(r=> r.spotId===selectedSpot.id && r.status!=='CANCELLED')
+    const spotRes = reservations.filter(r=> r.fishingSpot?.number === selectedSpot.number && r.status!=='CANCELLED')
     const halfBooked=(half:'morning'|'evening')=>{
       const start=new Date(dateToCheck)
       const end=new Date(dateToCheck)
       if(half==='morning'){start.setHours(0,0,0,0); end.setHours(12,0,0,0)}
       else{start.setHours(12,0,0,0); end.setDate(end.getDate()+1); end.setHours(0,0,0,0)}
-      return spotRes.some(res=>{const s=new Date(res.startDate); const e=new Date(res.endDate); return e>start && s<end})
+      return spotRes.some(res=>{const s=new Date(res.startDate); const e=new Date(new Date(res.endDate).getTime()-1); return e>start && s<end})
     }
     const isCompetitionDayInline = (competitionsData??[]).some((c:any)=>{
       const startC = startOfDay(new Date(c.date))
@@ -245,13 +259,19 @@ export default function ReservationSystem() {
         
         {/* Fishing Spots Map */}
         <div className="mb-6 flex justify-center">
-          <div className="relative w-1/2">
-            <img 
-              src="/lm-mapa.png" 
-              alt="Mapa lovných míst" 
-              className="w-full h-auto rounded-lg border border-gray-200 shadow-sm"
-            />
-            <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs">
+          <div className="relative w-full lg:w-4/5">
+            <button
+              type="button"
+              onClick={() => setShowMap(true)}
+              className="block w-full focus:outline-none"
+            >
+              <img 
+                src="/lm-mapa.png" 
+                alt="Mapa lovných míst" 
+                className="w-full h-auto rounded-lg border border-gray-200 shadow-sm"
+              />
+            </button>
+            <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs pointer-events-none">
               Mapa lovných míst
             </div>
           </div>
@@ -388,6 +408,17 @@ export default function ReservationSystem() {
             })()}
           </div>
 
+          {/* Day-only notice – shown directly under the duration buttons for better visibility */}
+          {selectedDuration === 'day' && selectedDate && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mt-4 mb-6">
+              <h3 className="text-lg font-bold text-yellow-800 mb-1">Denní rezervace</h3>
+              <p className="text-yellow-700 text-sm">
+                Pro ověření nám prosím zavolejte na&nbsp;
+                <a href="tel:+420773291941" className="font-medium no-underline">+420&nbsp;773&nbsp;291&nbsp;941</a>.
+              </p>
+            </div>
+          )}
+
           <ReservationCalendar
             spot={selectedSpot}
             reservations={reservations}
@@ -426,15 +457,61 @@ export default function ReservationSystem() {
         </div>
       )}
 
-      {selectedDuration === 'day' && selectedDate && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 mt-8">
-          <h2 className="text-xl font-bold text-yellow-800 mb-2">Denní rezervace</h2>
-          <p className="text-yellow-700 text-sm">
-            Pro ověření nám prosím zavolejte na&nbsp;
-            <a href="tel:+420773291941" className="font-medium no-underline">+420&nbsp;773&nbsp;291&nbsp;941</a>.
-          </p>
-        </div>
-      )}
+      {/* Lightbox for map */}
+      {showMap && typeof window !== 'undefined' && createPortal(
+         <div
+           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+           onClick={() => setShowMap(false)}
+         >
+           <div
+             className="relative"
+             onWheel={(e)=>{
+               e.preventDefault();
+               e.stopPropagation();
+               setMapZoom(prev=>{
+                 const next = e.deltaY < 0 ? prev + 0.1 : prev - 0.1
+                 return Math.min(4, Math.max(1, parseFloat(next.toFixed(2))))
+               })
+             }}
+           >
+             <img
+               src="/lm-mapa.png"
+               alt="Mapa lovných míst – detail"
+               className="max-w-full max-h-[90vh] rounded-lg shadow-xl transition-transform"
+               style={{ transform: `scale(${mapZoom})` }}
+             />
+
+             {/* Zoom controls */}
+             <div className="absolute bottom-2 right-2 flex flex-col gap-2">
+               <button
+                 onClick={(e)=>{e.stopPropagation(); setMapZoom(z=>Math.min(4, +(z+0.2).toFixed(2)))} }
+                 className="bg-white/90 hover:bg-white text-gray-800 font-bold py-1 px-2 rounded"
+                 aria-label="Přiblížit"
+               >+
+               </button>
+               <button
+                 onClick={(e)=>{e.stopPropagation(); setMapZoom(z=>Math.max(1, +(z-0.2).toFixed(2)))} }
+                 className="bg-white/90 hover:bg-white text-gray-800 font-bold py-1 px-2 rounded"
+                 aria-label="Oddálit"
+               >−
+               </button>
+             </div>
+           </div>
+
+           <button
+             onClick={(e) => {
+               e.stopPropagation()
+               setShowMap(false)
+               setMapZoom(1)
+             }}
+             className="absolute top-4 right-4 text-white text-3xl font-bold select-none"
+             aria-label="Zavřít"
+           >
+             ×
+           </button>
+         </div>,
+         document.body
+       )}
     </div>
   )
 } 

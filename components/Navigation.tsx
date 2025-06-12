@@ -1,12 +1,19 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 export default function Navigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  // Periodic highlight for Rezervovat button
+  const [highlight, setHighlight] = useState(false)
+
+  useEffect(() => {
+    const id = setInterval(() => setHighlight(h => !h), 5000)
+    return () => clearInterval(id)
+  }, [])
 
   const links = [
     { href: '/o-nas', label: 'O nás' },
@@ -21,32 +28,41 @@ export default function Navigation() {
       <div className="container mx-auto px-4 2xl:max-w-7xl">
         <div className="flex items-center h-16 lg:justify-between">
           {/* Center / primary action */}
-          <Link
-            href="/"
-            className={`px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 lg:hidden ${
-              pathname === '/'
-                ? 'bg-semin-blue text-white shadow-card'
-                : 'text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue'
-            }`}
-          >
-            Rezervovat
-          </Link>
+          {(() => {
+            const commonRez = 'px-4 py-2 rounded-xl text-base font-medium transition-colors duration-700 ease-in-out lg:hidden'
+            const className = pathname === '/'
+              ? `${commonRez} bg-semin-blue text-white shadow-card`
+              : highlight
+                ? `${commonRez} text-semin-blue/80 bg-semin-light-blue/50`
+                : `${commonRez} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
+            return (
+              <Link href="/" className={className}>Rezervovat</Link>
+            )
+          })()}
 
           {/* Desktop links */}
           <div className="hidden lg:flex space-x-4">
-            {[{ href: '/', label: 'Rezervovat' }, ...links.filter(l => l.href !== '/admin')].map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 ${
-                  pathname === href
-                    ? 'bg-semin-blue text-white shadow-card'
-                    : 'text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue'
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
+            {[{ href: '/', label: 'Rezervovat' }, ...links.filter(l => l.href !== '/admin')].map(({ href, label }) => {
+              const isActive = pathname === href
+              const commonBase = 'px-4 py-2 rounded-xl text-base font-medium '
+              const commonRez = `${commonBase} transition-colors duration-700 ease-in-out`
+              const commonFast = `${commonBase} transition-all duration-200`
+              let className: string
+              if (isActive) {
+                className = `${commonFast} bg-semin-blue text-white shadow-card`
+              } else if (href === '/') {
+                className = highlight
+                  ? `${commonRez} text-semin-blue/80 bg-semin-light-blue/50`
+                  : `${commonRez} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
+              } else {
+                className = `${commonFast} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
+              }
+              return (
+                <Link key={href} href={href} className={className}>
+                  {label}
+                </Link>
+              )
+            })}
           </div>
 
           {/* Admin link on desktop */}

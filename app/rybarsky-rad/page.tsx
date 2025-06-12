@@ -33,20 +33,23 @@ export default function FishingRulesPage() {
               po šetrném vyháčkování vrací zpět.
             </RuleRow>
             <RuleRow>
-              Používejte pouze háčky bez protihrotu a mějte u sebe podložku na
-              focení ryb.
+              Mějte u sebe podložku vaničkového typu pro šetrné zachazení s rybou.
             </RuleRow>
             <RuleRow>
-              Povolený počet prutů: 2&nbsp;ks; každá udice může mít max.&nbsp;2
-              návazce s&nbsp;jednoháčkem.
+              Povolený počet prutů: 2&nbsp;ks; každá udice může být opatřena pouze jedním návazcem s&nbsp;jednoháčkem.
             </RuleRow>
             <RuleRow>
-              Denní doba lovu: 7:00&nbsp;– 20:00 (případně dle zakoupeného tarifu – viz
+              Pro lov na položenou vyžadujeme průjezdnou únikovou montáž.
+            </RuleRow>
+            <RuleRow>
+              Pletená šňůra je zakázána!
+            </RuleRow>
+            <RuleRow>
+              Denní doba lovu: 8:00&nbsp;– 20:00 (případně dle zakoupeného tarifu – viz
               ceník).
             </RuleRow>
             <RuleRow>
-              Při zakrmování používejte pouze množství přiměřené délce vycházky; chceme udržet vodu
-              čistou.
+              Při focení rybu vždy držte nízko nad podložkou a pouze po dobu nezbytně nutnou. Zákaz focení vestoje!
             </RuleRow>
             <RuleRow>
               Zakázané způsoby lovu: živá či mrtvá rybka, srkačky, více než 2&nbsp;háčky na montáži,
@@ -80,6 +83,19 @@ export default function FishingRulesPage() {
             Kompletní znění zákonných předpisů a&nbsp;aktuální soupis revírů Českého rybářského svazu
             najdete na&nbsp;
             <a href="https://www.rybsvaz.cz/" target="_blank" rel="noopener" className="text-blue-700 font-semibold hover:underline">webu ČRS</a>.
+          </p>
+
+          <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Rezervace a platby</h2>
+          <p>
+            Denní i vícedenní povolenky vyřídíte na stránce Rezervujte nebo osobně přímo na pláži u rybníka Tomášek.
+          </p>
+          <p>
+            Zaplatit můžete hotově nebo QR platbou. Uvedené ceny zahrnují DPH.
+          </p>
+
+          <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Firemní akce a školní výlety</h2>
+          <p>
+            Chystáte závody, firemní teambuilding nebo školní výlet? Zavolejte nám na 773 291 941 a vypracujeme vám individuální nabídku.
           </p>
         </article>
         <aside className="lg:sticky lg:top-32">

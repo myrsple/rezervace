@@ -22,7 +22,7 @@ interface ReservationCalendarProps {
   spot: FishingSpot
   reservations: Reservation[]
   selectedDate: Date | null
-  onDateSelect: (date: Date, availableHalf?: 'morning' | 'evening' | null) => void
+  onDateSelect: (date: Date) => void
   duration: string
   timeSlot: string
 }
@@ -46,12 +46,14 @@ export default function ReservationCalendar({
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
   
   const [competitions, setCompetitions] = useState<Competition[]>([])
+  const [competitionsLoading, setCompetitionsLoading] = useState(true)
 
   useEffect(() => {
     fetchCompetitions()
   }, [])
 
   const fetchCompetitions = async () => {
+    setCompetitionsLoading(true)
     try {
       const response = await fetch('/api/competitions')
       if (response.ok) {
@@ -61,6 +63,8 @@ export default function ReservationCalendar({
     } catch (error) {
       console.error('Error fetching competitions:', error)
       setCompetitions([])
+    } finally {
+      setCompetitionsLoading(false)
     }
   }
 
@@ -72,6 +76,8 @@ export default function ReservationCalendar({
   }, [reservations, spot.id])
 
   const getDateAvailability = (date: Date): 'available' | 'occupied' | 'competition' | 'past' => {
+    if (competitionsLoading) return 'past'
+
     const dayStart = startOfDay(date)
     const today = startOfDay(new Date())
 
@@ -126,49 +132,54 @@ export default function ReservationCalendar({
   }
 
   const canSelectDate = (date: Date): boolean => {
+    if (competitionsLoading) return false
+
     const dayStart = startOfDay(date);
     const today = startOfDay(new Date());
     if (isBefore(dayStart, today)) return false;
-    // Use the same logic as in the render to determine if the day is split
-    function getHalvesBooked(day: Date) {
-      const reservations = spotReservations.filter(reservation => {
-        const reservationStart = new Date(reservation.startDate)
-        const reservationEnd = new Date(reservation.endDate)
-        const dayStart = startOfDay(day)
-        const dayEnd = addDays(dayStart, 1)
-        return reservationStart < dayEnd && reservationEnd > dayStart
-      })
-      let morningBooked = false;
-      let eveningBooked = false;
-      for (const res of reservations) {
+
+    // helper to see if specific half of a day is booked
+    const isHalfBooked = (day: Date, half: 'morning' | 'evening'): boolean => {
+      const reservations = spotReservations.filter(res => {
         const resStart = new Date(res.startDate);
         const resEnd = new Date(res.endDate);
-        if (resEnd > new Date(day.setHours(6,0,0,0)) && resStart < new Date(day.setHours(18,0,0,0))) {
-          morningBooked = true;
-        }
-        if (resEnd > new Date(day.setHours(18,0,0,0)) && resStart < new Date(addDays(day,1).setHours(6,0,0,0))) {
-          eveningBooked = true;
-        }
+        const dayStart = startOfDay(day);
+        const dayEnd = addDays(dayStart,1);
+        return resStart < dayEnd && resEnd > dayStart;
+      });
+      const halfStart = new Date(day);
+      const halfEnd = new Date(day);
+      if (half === 'morning') {
+        halfStart.setHours(0,0,0,0);
+        halfEnd.setHours(12,0,0,0);
+      } else {
+        halfStart.setHours(12,0,0,0);
+        halfEnd.setDate(halfEnd.getDate()+1);
+        halfEnd.setHours(0,0,0,0);
       }
-      return { morningBooked, eveningBooked };
+      return reservations.some(res => {
+        const resStart = new Date(res.startDate);
+        const resEnd = new Date(res.endDate);
+        return resEnd > halfStart && resStart < halfEnd;
+      });
     }
-    if (duration === '48h') {
-      const days = [date, addDays(date, 1), addDays(date, 2)];
-      for (const d of days) {
-        // Prevent selection if any day is a competition
-        if (getDateAvailability(d) === 'competition') return false;
-        const { morningBooked, eveningBooked } = getHalvesBooked(d);
-        if (morningBooked || eveningBooked) return false;
-      }
-      return true;
-    }
-    // Allow selection if at least one half is available for other durations
-    const { morningBooked, eveningBooked } = getHalvesBooked(date);
-    if (!morningBooked || !eveningBooked) return true;
-    // Otherwise, fall back to previous logic
-    const availability = getDateAvailability(date);
-    if (availability === 'past' || availability === 'occupied' || availability === 'competition') return false;
-    return true;
+
+    // For 'day' duration: allow click if either full day is available (usual case)
+    // OR if a 24h/48h stay could legitimately start here so that UI can auto-switch
+    const dayAvailable = getDateAvailability(date) === 'available';
+    if (dayAvailable) return true;
+
+    // If not dayAvailable, evaluate if 24h or 48h would fit from this date.
+    const eveningBusy = isHalfBooked(date,'evening');
+    const nextMorningBusy = isHalfBooked(addDays(date,1),'morning');
+    const day1MorningBusy = isHalfBooked(addDays(date,1),'morning');
+    const day1EveningBusy = isHalfBooked(addDays(date,1),'evening');
+    const day2MorningBusy = isHalfBooked(addDays(date,2),'morning');
+
+    const can24hFromHere = !eveningBusy && !nextMorningBusy && getDateAvailability(date)!=='competition' && getDateAvailability(addDays(date,1))!=='competition';
+    const can48hFromHere = !eveningBusy && !day1MorningBusy && !day1EveningBusy && !day2MorningBusy && [date, addDays(date,1), addDays(date,2)].every(d=>getDateAvailability(d)!=='competition');
+
+    return can24hFromHere || can48hFromHere;
   }
 
   const getDayClasses = (
@@ -179,24 +190,36 @@ export default function ReservationCalendar({
     availability: 'available' | 'occupied' | 'competition' | 'past'
   ): string => {
     const baseClasses = "min-h-[60px] p-1 flex flex-col justify-between text-left transition-all duration-200 text-sm"
+    let extraDim = ''
     if (!isCurrentMonth) {
-      return `${baseClasses} bg-gray-50/50 text-gray-300 cursor-not-allowed`
+      extraDim = ' opacity-40 cursor-not-allowed'
     }
-    if (isSelected) {
-      return `${baseClasses} bg-semin-blue/10 text-semin-blue ring-2 ring-semin-blue font-medium shadow-sm`
-    }
+
+    // Determine classes based on availability first
+    let availabilityClasses = ''
     switch (availability) {
       case 'available':
-        return `${baseClasses} bg-green-200 hover:bg-green-300 text-gray-800 hover:text-green-900 cursor-pointer ring-1 ring-green-300 hover:ring-green-400`
+        availabilityClasses = `${baseClasses} bg-green-200 text-gray-800 ring-1 ring-green-300${!isCurrentMonth ? '' : ' hover:bg-green-300 hover:text-green-900 cursor-pointer hover:ring-semin-blue'}${extraDim}`
+        break
       case 'occupied':
-        return `${baseClasses} bg-red-200 text-gray-700 cursor-not-allowed ring-1 ring-red-300`
+        availabilityClasses = `${baseClasses} bg-red-200 text-gray-700 cursor-not-allowed ring-1 ring-green-300${extraDim}`
+        break
       case 'competition':
-        return `${baseClasses} bg-purple-200 text-purple-900 cursor-not-allowed ring-1 ring-purple-300`
+        availabilityClasses = `${baseClasses} bg-purple-200 text-purple-900 cursor-not-allowed ring-1 ring-green-300${extraDim}`
+        break
       case 'past':
-        return `${baseClasses} bg-gray-100 text-gray-400 cursor-not-allowed`;
+        availabilityClasses = `${baseClasses} bg-gray-100 text-gray-400 cursor-not-allowed${extraDim}`
+        break
       default:
-        return `${baseClasses} bg-gray-100 text-gray-400 cursor-not-allowed`
+        availabilityClasses = `${baseClasses} bg-gray-100 text-gray-400 cursor-not-allowed${extraDim}`
     }
+
+    // If selected, overlay ring & blue text but keep original background classes
+    if (isSelected) {
+      return `${availabilityClasses} text-semin-blue ring-2 ring-semin-blue font-medium shadow-sm`
+    }
+
+    return availabilityClasses
   }
 
   return (
@@ -266,16 +289,16 @@ export default function ReservationCalendar({
             // Use getDateAvailability to determine the true state (competition, occupied, split, available, past)
             const availability = getDateAvailability(date);
 
-            // Define morning and evening half boundaries
+            // Define morning and evening half boundaries (00:00–12:00 and 12:00–24:00)
             const morningStart = new Date(date);
-            morningStart.setHours(6, 0, 0, 0);
+            morningStart.setHours(0, 0, 0, 0);
             const morningEnd = new Date(date);
-            morningEnd.setHours(18, 0, 0, 0);
+            morningEnd.setHours(12, 0, 0, 0);
             const eveningStart = new Date(date);
-            eveningStart.setHours(18, 0, 0, 0);
+            eveningStart.setHours(12, 0, 0, 0);
             const eveningEnd = new Date(date);
             eveningEnd.setDate(eveningEnd.getDate() + 1);
-            eveningEnd.setHours(6, 0, 0, 0);
+            eveningEnd.setHours(0, 0, 0, 0);
 
             // Find all reservations for this day
             const dayReservations = spotReservations.filter(reservation => {
@@ -286,19 +309,17 @@ export default function ReservationCalendar({
               return reservationStart < dayEnd && reservationEnd > dayStart
             })
 
-            // Check if morning or evening is booked
+            // Check if morning or evening is booked (early = 00-12, late = 12-24)
             let morningBooked = false;
             let eveningBooked = false;
             for (const res of dayReservations) {
-              const resStart = new Date(res.startDate);
-              const resEnd = new Date(res.endDate);
-              // Morning is booked if any reservation overlaps 6:00–18:00
+              const resStart = new Date(res.startDate)
+              const resEnd = new Date(res.endDate)
               if (resEnd > morningStart && resStart < morningEnd) {
-                morningBooked = true;
+                morningBooked = true
               }
-              // Evening is booked if any reservation overlaps 18:00–6:00 next day
               if (resEnd > eveningStart && resStart < eveningEnd) {
-                eveningBooked = true;
+                eveningBooked = true
               }
             }
 
@@ -312,73 +333,43 @@ export default function ReservationCalendar({
               tileType = 'split';
             }
 
-            // Update highlight logic for preview overlay:
+            // Highlight preview for selected reservation (half-aware)
             let isInSelectedRange = false;
-            let isInSelectedHalf: 'morning' | 'evening' | 'full' | null = null;
-            if (selectedDate && duration === 'day') {
-              isInSelectedRange = isSameDay(date, selectedDate);
-              isInSelectedHalf = 'full';
-            } else if (selectedDate && duration === '24h') {
-              const start = startOfDay(selectedDate);
-              const next = addDays(start, 1);
-              if (timeSlot === 'morning') {
-                // Highlight full selected day and next day's morning
+            let selectedHalf: 'morning' | 'evening' | 'full' | null = null;
+            if (selectedDate) {
+              const start = startOfDay(selectedDate)
+              if (duration === '24h') {
                 if (isSameDay(date, selectedDate)) {
                   isInSelectedRange = true;
-                  isInSelectedHalf = 'full';
-                } else if (isSameDay(date, next)) {
+                  selectedHalf = 'evening';
+                } else if (isSameDay(date, addDays(selectedDate, 1))) {
                   isInSelectedRange = true;
-                  isInSelectedHalf = 'morning';
+                  selectedHalf = 'morning';
                 }
-              } else if (timeSlot === 'evening') {
-                // Highlight selected day's evening and next day's full
+              } else if (duration === '48h') {
                 if (isSameDay(date, selectedDate)) {
                   isInSelectedRange = true;
-                  isInSelectedHalf = 'evening';
-                } else if (isSameDay(date, next)) {
+                  selectedHalf = 'evening';
+                } else if (isSameDay(date, addDays(selectedDate, 1))) {
                   isInSelectedRange = true;
-                  isInSelectedHalf = 'full';
+                  selectedHalf = 'full';
+                } else if (isSameDay(date, addDays(selectedDate, 2))) {
+                  isInSelectedRange = true;
+                  selectedHalf = 'morning';
                 }
-              }
-            } else if (selectedDate && duration === '48h') {
-              const start = startOfDay(selectedDate);
-              const next = addDays(start, 1);
-              const next2 = addDays(start, 2);
-              if (timeSlot === 'morning') {
-                // Highlight full selected day, next day, and next2 morning
-                if (isSameDay(date, selectedDate) || isSameDay(date, next)) {
-                  isInSelectedRange = true;
-                  isInSelectedHalf = 'full';
-                } else if (isSameDay(date, next2)) {
-                  isInSelectedRange = true;
-                  isInSelectedHalf = 'morning';
-                }
-              } else if (timeSlot === 'evening') {
-                // Highlight selected day's evening, next day full, next2 full
-                if (isSameDay(date, selectedDate)) {
-                  isInSelectedRange = true;
-                  isInSelectedHalf = 'evening';
-                } else if (isSameDay(date, next) || isSameDay(date, next2)) {
-                  isInSelectedRange = true;
-                  isInSelectedHalf = 'full';
-                }
+              } else if (duration === 'day') {
+                isInSelectedRange = isSameDay(date, selectedDate);
+                selectedHalf = 'full';
               }
             }
 
-            // Use getDayClasses with the correct tileType
-            let cellClasses = getDayClasses(date, isSelected, canSelect, isCurrentMonth, tileType as any) + ' rounded-md font-semibold transition-transform duration-150 ease-in-out';
+            // For visual styling choose:
+            //  - 'past' remains past
+            //  - split days use 'available' styling
+            const styleAvailability = availability === 'past' ? 'past' : (tileType === 'split' ? 'available' : (tileType as any))
+            let cellClasses = getDayClasses(date, isSelected, canSelect, isCurrentMonth, styleAvailability) + ' font-semibold transition-transform duration-150 ease-in-out';
             if (canSelect && isCurrentMonth && !isSelected && tileType !== 'competition') {
               cellClasses += ' hover:scale-105 hover:shadow-md focus:scale-105 focus:shadow-md';
-            }
-            if (isTodayDate) {
-              cellClasses += ' ring-2 ring-semin-blue';
-            }
-            if (isInSelectedRange && isCurrentMonth && isInSelectedHalf === 'morning') {
-              cellClasses += ' bg-blue-100 ring-2 ring-blue-400';
-            } else if (isInSelectedRange && isCurrentMonth && isInSelectedHalf === 'evening') {
-              cellClasses += ' bg-blue-100 ring-2 ring-blue-400';
-            } else if (isInSelectedRange && isCurrentMonth && isInSelectedHalf === 'full') {
-              cellClasses += ' bg-blue-100 ring-2 ring-blue-400';
             }
 
             // Render competition tile as purple, unclickable, no split logic
@@ -386,13 +377,13 @@ export default function ReservationCalendar({
               return (
                 <button
                   key={date.toISOString()}
-                  className={getDayClasses(date, isSelected, false, isCurrentMonth, 'competition') + ' rounded-md font-semibold cursor-not-allowed'}
+                  className={getDayClasses(date, isSelected, false, isCurrentMonth, 'competition') + ' font-semibold cursor-not-allowed'}
                   disabled
                   style={{ minHeight: 48, position: 'relative', overflow: 'hidden' }}
                 >
-                  <div className="flex items-center h-7">
+                  <div className="flex items-center h-7 ml-[5px]">
                     {isTodayDate ? (
-                      <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow">
+                      <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow" style={{marginLeft:'-6px'}}>
                         {format(date, 'd')}
                       </span>
                     ) : (
@@ -413,126 +404,46 @@ export default function ReservationCalendar({
                 key={date.toISOString()}
                 onClick={() => {
                   if (!canSelect || !isCurrentMonth) return;
-                  // Determine which half is available
-                  let availableHalf: 'morning' | 'evening' | null = null;
-                  if (tileType === 'split') {
-                    if (!morningBooked) availableHalf = 'morning';
-                    if (!eveningBooked) availableHalf = 'evening';
-                  }
-                  onDateSelect(date, availableHalf);
+                  onDateSelect(date);
                 }}
-                className={cellClasses}
+                className={cellClasses + ' hover:z-20 focus:z-20'}
                 disabled={!canSelect || !isCurrentMonth}
-                style={{ minHeight: 48, position: 'relative', overflow: 'hidden' }}
+                style={{ minHeight: 48, position: 'relative', overflow: 'visible', zIndex: isSelected ? 30 : undefined }}
               >
-                {/* Split tile rendering */}
-                {tileType === 'split' && isCurrentMonth && !isSelected ? (
-                  <>
-                    {/* If morning is booked, left/top is red, right/bottom is green. If evening is booked, left/top is green, right/bottom is red. */}
-                    <div style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}>
-                      {morningBooked ? (
-                        <div style={{width: '100%', height: '100%', background: 'linear-gradient(135deg, #fecaca 50%, #bbf7d0 50%)', opacity: 1, zIndex: 0, position: 'absolute', top: 0, left: 0}}></div>
-                      ) : (
-                        <div style={{width: '100%', height: '100%', background: 'linear-gradient(135deg, #bbf7d0 50%, #fecaca 50%)', opacity: 1, zIndex: 0, position: 'absolute', top: 0, left: 0}}></div>
-                      )}
-                    </div>
-                    <div style={{position: 'relative', zIndex: 1}}>
-                      <div className="flex items-center h-7">
-                        {isTodayDate ? (
-                          <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow">
-                            {format(date, 'd')}
-                          </span>
-                        ) : (
-                          <span className="text-base font-semibold text-left">
-                            {format(date, 'd')}
-                          </span>
-                        )}
-                      </div>
-                      {isCurrentMonth && weather && (
-                        <div className="text-xl mt-1">{weather.icon}</div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center h-7">
-                      {isTodayDate ? (
-                        <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow">
-                          {format(date, 'd')}
-                        </span>
-                      ) : (
-                        <span className="text-base font-semibold text-left">
-                          {format(date, 'd')}
-                        </span>
-                      )}
-                    </div>
-                    {isCurrentMonth && weather && (
-                      <div className="text-xl mt-1">{weather.icon}</div>
-                    )}
-                  </>
+                {/* Split tile rendering with red half overlay */}
+                {tileType === 'split' && isCurrentMonth && (
+                  morningBooked ? (
+                    <div className="absolute inset-y-0 left-0 w-1/2 bg-red-200 rounded-r-md" style={{opacity:1, zIndex:0}} />
+                  ) : (
+                    <div className="absolute inset-y-0 right-0 w-1/2 bg-red-200 rounded-l-md" style={{opacity:1, zIndex:0}} />
+                  )
                 )}
-                {isInSelectedRange && isCurrentMonth && isInSelectedHalf === 'morning' ? (
-                  <>
-                    {/* Half-cell highlight and outline using the same diagonal as availability */}
-                    <div style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                      background: 'linear-gradient(135deg, #60a5fa 50%, transparent 50%)',
-                      opacity: 0.7,
-                      borderTopLeftRadius: '0.5rem',
-                      borderBottomLeftRadius: '0.5rem',
-                      borderTopRightRadius: '0.5rem',
-                      borderBottomRightRadius: '0.5rem',
-                      boxShadow: isSelected ? '-2px 0 0 0 #2563eb, 0 -2px 0 0 #2563eb' : undefined,
-                      borderLeft: isSelected ? '2px solid #2563eb' : undefined,
-                      borderTop: isSelected ? '2px solid #2563eb' : undefined,
-                    }}></div>
-                  </>
-                ) : isInSelectedRange && isCurrentMonth && isInSelectedHalf === 'evening' ? (
-                  <>
-                    {/* Half-cell highlight and outline using the same diagonal as availability */}
-                    <div style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                      background: 'linear-gradient(135deg, transparent 50%, #60a5fa 50%)',
-                      opacity: 0.7,
-                      borderTopLeftRadius: '0.5rem',
-                      borderBottomLeftRadius: '0.5rem',
-                      borderTopRightRadius: '0.5rem',
-                      borderBottomRightRadius: '0.5rem',
-                      boxShadow: isSelected ? '2px 0 0 0 #2563eb, 0 2px 0 0 #2563eb' : undefined,
-                      borderRight: isSelected ? '2px solid #2563eb' : undefined,
-                      borderBottom: isSelected ? '2px solid #2563eb' : undefined,
-                    }}></div>
-                  </>
-                ) : isInSelectedRange && isCurrentMonth && isInSelectedHalf === 'full' ? (
-                  <>
-                    {/* Full-cell highlight and outline */}
-                    <div style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      background: '#60a5fa',
-                      opacity: 0.7,
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                      border: isSelected ? '2px solid #2563eb' : undefined,
-                      borderRadius: '0.5rem',
-                    }}></div>
-                  </>
-                ) : null}
+
+                <div className="flex items-center h-7 ml-[5px] relative z-10">
+                  {isTodayDate ? (
+                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow" style={{marginLeft:'-6px'}}>
+                      {format(date, 'd')}
+                    </span>
+                  ) : (
+                    <span className="text-base font-semibold text-left">
+                      {format(date, 'd')}
+                    </span>
+                  )}
+                </div>
+                {isCurrentMonth && weather && (
+                  <div className="text-xl mt-1 relative z-10">{weather.icon}</div>
+                )}
+
+                {/* Preview overlay for current selection – pale blue fill, no border */}
+                {isInSelectedRange && selectedHalf && (
+                  selectedHalf === 'full' ? (
+                    <div className="absolute inset-0 bg-red-100 z-5" style={{opacity:0.65}}></div>
+                  ) : selectedHalf === 'morning' ? (
+                    <div className="absolute inset-y-0 left-0 w-1/2 bg-red-100 rounded-r-md z-5" style={{opacity:0.65}}></div>
+                  ) : (
+                    <div className="absolute inset-y-0 right-0 w-1/2 bg-red-100 rounded-l-md z-5" style={{opacity:0.65}}></div>
+                  )
+                )}
               </button>
             )
           })}

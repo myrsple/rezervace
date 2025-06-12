@@ -18,7 +18,8 @@ export default function ReservationSummary({
 }: ReservationSummaryProps) {
   const getStartTime = () => {
     if (duration === 'day') return '6:00'
-    return timeSlot === 'morning' ? '6:00' : '18:00'
+    // After schedule revamp, all 24h/48h reservations start at 12:00 (noon)
+    return '12:00'
   }
 
   const getDurationText = () => {

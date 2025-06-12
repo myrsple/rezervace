@@ -5,21 +5,24 @@ import FishingSpotSelector from './FishingSpotSelector'
 import ReservationCalendar from './ReservationCalendar'
 import BookingForm from './BookingForm'
 import { FishingSpot, Reservation } from '@/types'
-import { format } from 'date-fns'
+import { format, addDays, startOfDay } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import { getWeatherForDate, WeatherData } from '@/lib/weather'
 import ReservationSummary from './ReservationSummary'
+import useSWR from 'swr'
 
 export default function ReservationSystem() {
   const [selectedSpot, setSelectedSpot] = useState<FishingSpot | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<string>('24h')
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('morning')
+  const [selectedTimeSlot] = useState<string>('noon')
   const [fishingSpots, setFishingSpots] = useState<FishingSpot[]>([])
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [weatherForecast, setWeatherForecast] = useState<WeatherData | null>(null)
-  const [availableHalf, setAvailableHalf] = useState<'morning' | 'evening' | null>(null)
+
+  const fetcher = (url:string)=>fetch(url).then(r=>r.json())
+  const { data: competitionsData } = useSWR('/api/competitions', fetcher)
 
   useEffect(() => {
     fetchFishingSpots()
@@ -72,16 +75,87 @@ export default function ReservationSystem() {
     setSelectedDate(null) // Reset date when spot changes
   }
 
-  const handleDateSelect = (date: Date, half: 'morning' | 'evening' | null | undefined) => {
+  const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
-    setAvailableHalf(half ?? null)
-    if (half === 'morning') {
-      setSelectedTimeSlot('morning')
-    } else if (half === 'evening') {
-      setSelectedTimeSlot('evening')
+    setWeatherForecast(getWeatherForDate(date))
+
+    // Evaluate feasibility based on the date the user just clicked (not the stale state value)
+    const dayOk = isDayPossible(date)
+    const h24Ok = isDurationPossible('24h', date)
+    const h48Ok = isDurationPossible('48h', date)
+
+    let desired: string = selectedDuration
+    if (selectedDuration === 'day' && !dayOk) {
+      desired = h24Ok ? '24h' : h48Ok ? '48h' : selectedDuration
+    } else if (selectedDuration === '24h' && !h24Ok) {
+      desired = dayOk ? 'day' : h48Ok ? '48h' : selectedDuration
+    } else if (selectedDuration === '48h' && !h48Ok) {
+      desired = h24Ok ? '24h' : dayOk ? 'day' : selectedDuration
     }
-    const forecast = getWeatherForDate(date)
-    setWeatherForecast(forecast)
+
+    if (desired !== selectedDuration) {
+      setSelectedDuration(desired)
+    }
+  }
+
+  const isDurationPossible = (duration: '24h' | '48h', baseDate: Date | null = null) => {
+    const dateToCheck = baseDate ?? selectedDate
+    if (!dateToCheck || !selectedSpot) return true
+
+    const spotRes = reservations.filter(r => r.spotId === selectedSpot.id && r.status !== 'CANCELLED')
+
+    const isHalfBooked = (date: Date, half: 'morning' | 'evening') => {
+      const halfStart = new Date(date)
+      const halfEnd = new Date(date)
+      if (half === 'morning') {
+        halfStart.setHours(0,0,0,0)
+        halfEnd.setHours(12,0,0,0)
+      } else {
+        halfStart.setHours(12,0,0,0)
+        halfEnd.setDate(halfEnd.getDate()+1)
+        halfEnd.setHours(0,0,0,0)
+      }
+      return spotRes.some(res=>{
+        const s = new Date(res.startDate); const e = new Date(res.endDate)
+        return e>halfStart && s<halfEnd
+      })
+    }
+
+    const isCompetitionDay = (d: Date)=>{
+      if (!competitionsData) return false
+      return competitionsData.some((c: any)=>{
+        const compDay = startOfDay(new Date(c.date))
+        return compDay.getTime() === startOfDay(d).getTime()
+      })
+    }
+
+    if (duration === '24h') {
+      if(isCompetitionDay(dateToCheck)||isCompetitionDay(addDays(dateToCheck,1))) return false
+      return !(isHalfBooked(dateToCheck,'evening') || isHalfBooked(addDays(dateToCheck,1),'morning'))
+    }
+    if (duration === '48h') {
+      if([dateToCheck,addDays(dateToCheck,1),addDays(dateToCheck,2)].some(isCompetitionDay)) return false
+      return !(isHalfBooked(dateToCheck,'evening') ||
+               isHalfBooked(addDays(dateToCheck,1),'morning') ||
+               isHalfBooked(addDays(dateToCheck,1),'evening') ||
+               isHalfBooked(addDays(dateToCheck,2),'morning'))
+    }
+    return true
+  }
+
+  const isDayPossible = (baseDate: Date | null = null) => {
+    const dateToCheck = baseDate ?? selectedDate
+    if (!dateToCheck || !selectedSpot) return true
+    const spotRes = reservations.filter(r=> r.spotId===selectedSpot.id && r.status!=='CANCELLED')
+    const halfBooked=(half:'morning'|'evening')=>{
+      const start=new Date(dateToCheck)
+      const end=new Date(dateToCheck)
+      if(half==='morning'){start.setHours(0,0,0,0); end.setHours(12,0,0,0)}
+      else{start.setHours(12,0,0,0); end.setDate(end.getDate()+1); end.setHours(0,0,0,0)}
+      return spotRes.some(res=>{const s=new Date(res.startDate); const e=new Date(res.endDate); return e>start && s<end})
+    }
+    const isCompetitionDay= (competitionsData??[]).some((c:any)=> startOfDay(new Date(c.date)).getTime()===startOfDay(dateToCheck).getTime())
+    return !(halfBooked('morning')||halfBooked('evening')||isCompetitionDay)
   }
 
   const handleReservationComplete = () => {
@@ -164,65 +238,41 @@ export default function ReservationSystem() {
                               <button
                   type="button"
                   onClick={() => setSelectedDuration('day')}
-                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${selectedDuration === 'day' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}${availableHalf ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
-                  disabled={!!availableHalf}
+                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${!isDayPossible()? 'opacity-40 cursor-not-allowed border-gray-200': selectedDuration === 'day' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                  disabled={!isDayPossible()}
                 >
                   <div className={`font-bold text-lg ${selectedDuration === 'day' ? 'text-semin-blue' : 'text-semin-gray'}`}>
                     Jeden den
                   </div>
                   <div className={`text-sm ${selectedDuration === 'day' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>
-                    6:00 - 22:00
+                    8:00 - 22:00
                   </div>
-                  <div className="text-2xl font-bold text-semin-green">400 Kč</div>
+                  <div className="text-2xl font-bold text-semin-green">200,-</div>
                 </button>
                 
                 <button
                   type="button"
-                  onClick={() => setSelectedDuration('24h')}
-                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${selectedDuration === '24h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                  onClick={() => isDurationPossible('24h') && setSelectedDuration('24h')}
+                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${!isDurationPossible('24h') ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '24h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                  disabled={!isDurationPossible('24h')}
                 >
                   <div className={`font-bold text-lg ${selectedDuration === '24h' ? 'text-semin-blue' : 'text-semin-gray'}`}>24 hodin</div>
-                  <div className="text-2xl font-bold text-semin-green">600 Kč</div>
+                  <div className={`text-sm ${selectedDuration === '24h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Poledne</div>
+                  <div className="text-2xl font-bold text-semin-green">350,-</div>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setSelectedDuration('48h')}
-                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${selectedDuration === '48h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}${availableHalf ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
-                  disabled={!!availableHalf}
+                  onClick={() => isDurationPossible('48h') && setSelectedDuration('48h')}
+                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${!isDurationPossible('48h') ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '48h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                  disabled={!isDurationPossible('48h')}
                 >
                   <div className={`font-bold text-lg ${selectedDuration === '48h' ? 'text-semin-blue' : 'text-semin-gray'}`}>48 hodin</div>
-                  <div className="text-2xl font-bold text-semin-green">1000 Kč</div>
+                  <div className={`text-sm ${selectedDuration === '48h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Den – Poledne</div>
+                  <div className="text-2xl font-bold text-semin-green">600,-</div>
                 </button>
             </div>
           </div>
-
-          {/* Time Slot Selection (for 24h and 48h) */}
-          {(selectedDuration === '24h' || selectedDuration === '48h') && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Začátek rezervace
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setSelectedTimeSlot('morning')}
-                  className={`p-4 border-2 rounded-2xl text-center transition-all duration-200 font-medium ${selectedTimeSlot === 'morning' ? 'border-semin-blue bg-semin-light-blue text-semin-blue shadow-card' : 'border-gray-200 bg-white text-semin-gray hover:border-semin-blue hover:shadow-card'}${availableHalf === 'evening' ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
-                  disabled={availableHalf === 'evening'}
-                >
-                  Ráno (6:00)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTimeSlot('evening')}
-                  className={`p-4 border-2 rounded-2xl text-center transition-all duration-200 font-medium ${selectedTimeSlot === 'evening' ? 'border-semin-blue bg-semin-light-blue text-semin-blue shadow-card' : 'border-gray-200 bg-white text-semin-gray hover:border-semin-blue hover:shadow-card'}${availableHalf === 'morning' ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
-                  disabled={availableHalf === 'morning'}
-                >
-                  Večer (18:00)
-                </button>
-              </div>
-            </div>
-          )}
 
           <ReservationCalendar
             spot={selectedSpot}
@@ -236,7 +286,7 @@ export default function ReservationSystem() {
       )}
 
       {/* Step 3: Booking Form */}
-      {selectedSpot && selectedDate && (
+      {selectedSpot && selectedDate && selectedDuration !== 'day' && (
         <div className="bg-white rounded-2xl shadow-soft p-8">
           <h2 className="text-3xl font-bold text-semin-blue mb-6">
             Zbývá už jen potvrdit ✅
@@ -259,6 +309,16 @@ export default function ReservationSystem() {
             timeSlot={selectedTimeSlot}
             onComplete={handleReservationComplete}
           />
+        </div>
+      )}
+
+      {selectedDuration === 'day' && selectedDate && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mt-8">
+          <h2 className="text-xl font-bold text-yellow-800 mb-2">Rezervace na jeden den</h2>
+          <p className="text-yellow-700 text-sm">
+            Pro rezervaci celého dne nás prosím kontaktujte telefonicky na&nbsp;
+            <a href="tel:+420123456789" className="font-medium underline">+420&nbsp;123&nbsp;456&nbsp;789</a>.
+          </p>
         </div>
       )}
     </div>

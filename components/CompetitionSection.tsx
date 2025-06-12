@@ -1,73 +1,35 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
+import useSWR from 'swr'
 import { Competition } from '@/types'
-import { format, addHours, isBefore } from 'date-fns'
+import { format, startOfDay } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import CompetitionRegistration from './CompetitionRegistration'
 
+const fetcher = (url: string) => fetch(url).then(async r => {
+  if (!r.ok) throw new Error('http ' + r.status)
+  return r.json()
+})
+
 export default function CompetitionSection() {
-  const [competitions, setCompetitions] = useState<Competition[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null)
+  const { data, error } = useSWR<Competition[]>('/api/competitions', fetcher, {
+    shouldRetryOnError: true,
+    errorRetryInterval: 3000,
+  })
 
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    const minSpinnerTime = new Promise((resolve) => setTimeout(resolve, 1000));
-    const fetchPromise = fetchCompetitions();
-    Promise.all([minSpinnerTime, fetchPromise]).then(() => {
-      if (isMounted) setLoading(false);
-    });
-    return () => { isMounted = false; };
-  }, []);
+  const competitions = React.useMemo(() => {
+    if (!data) return []
+    const today = startOfDay(new Date())
+    return data.filter((comp: Competition) => comp.isActive && startOfDay(new Date(comp.date)) >= today)
+  }, [data])
 
-  const fetchCompetitions = async () => {
-    setLoading(true)
-    setError(false)
-    try {
-      const response = await fetch('/api/competitions')
-      if (!response.ok) {
-        console.error('Failed to fetch competitions:', response.status)
-        setError(true)
-        return
-      }
-
-      let data
-      try {
-        data = await response.json()
-      } catch (error) {
-        console.error('Error parsing competitions data:', error)
-        setError(true)
-        return
-      }
-
-      if (!Array.isArray(data)) {
-        console.error('Invalid competitions data format')
-        setError(true)
-        return
-      }
-      
-      // Only show upcoming competitions
-      const now = new Date()
-      const activeCompetitions = data.filter((comp: Competition) => {
-        const competitionDate = new Date(comp.date)
-        return comp.isActive && isBefore(now, competitionDate)
-      })
-      
-      setCompetitions(activeCompetitions)
-    } catch (error) {
-      console.error('Error fetching competitions:', error)
-      setError(true)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const loading = !data && !error
+  const [selectedCompetition, setSelectedCompetition] = React.useState<Competition | null>(null)
 
   const handleRegistrationComplete = () => {
     setSelectedCompetition(null)
-    fetchCompetitions() // Refresh to update registration counts
+    // SWR will revalidate automatically when we mutate
   }
 
   const isCompetitionFull = (competition: Competition) => {
@@ -106,7 +68,10 @@ export default function CompetitionSection() {
           </svg>
           <p className="text-lg font-medium text-red-600">Nepodařilo se načíst závody</p>
           <button 
-            onClick={fetchCompetitions}
+            onClick={() => {
+              // trigger revalidation
+              window.location.reload()
+            }}
             className="mt-4 px-4 py-2 bg-semin-blue text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Zkusit znovu
@@ -133,7 +98,7 @@ export default function CompetitionSection() {
   return (
     <SectionWrapper>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {competitions.map((competition) => {
+        {competitions.map((competition: Competition) => {
           const isFull = isCompetitionFull(competition)
           const registrationCount = competition.registrations?.length || 0
           

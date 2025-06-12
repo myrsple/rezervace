@@ -15,9 +15,9 @@ interface BookingFormProps {
 }
 
 const PRICING = {
-  day: 400,
-  '24h': 600,
-  '48h': 1000
+  day: 200,
+  '24h': 350,
+  '48h': 600
 }
 
 export default function BookingForm({
@@ -89,7 +89,7 @@ export default function BookingForm({
           ...formData,
           startDate: date.toISOString(),
           duration,
-          startTime: duration === 'day' ? '6am' : timeSlot,
+          startTime: duration === 'day' ? '6am' : 'noon',
           totalPrice,
           rentedGear: selectedGear.length > 0 ? selectedGear.join(',') : null,
           gearPrice: gearPrice > 0 ? gearPrice : null
@@ -184,7 +184,7 @@ export default function BookingForm({
                         return gearItem && (
                           <div key={gearId} className="flex justify-between">
                             <span className="text-gray-900">{gearItem.name}</span>
-                            <span className="text-gray-600">{gearItem.price} Kč</span>
+                            <span className="text-gray-600">{gearItem.price},-</span>
                           </div>
                         )
                       })}
@@ -207,17 +207,17 @@ export default function BookingForm({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Místo:</span>
-                      <span className="text-gray-900">{basePrice} Kč</span>
+                      <span className="text-gray-900">{basePrice},-</span>
                     </div>
                     {gearPrice > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Vybavení:</span>
-                        <span className="text-gray-900">{gearPrice} Kč</span>
+                        <span className="text-gray-900">{gearPrice},-</span>
                       </div>
                     )}
                     <div className="flex justify-between pt-2 border-t">
                       <span className="font-medium text-gray-900">Celkem:</span>
-                      <span className="font-medium text-gray-900">{totalPrice} Kč</span>
+                      <span className="font-medium text-gray-900">{totalPrice},-</span>
                     </div>
                   </div>
                 </div>
@@ -340,7 +340,7 @@ export default function BookingForm({
                   <span className="text-2xl">{gear.emoji}</span>
                   <div>
                     <div className="font-medium text-semin-gray">{gear.name}</div>
-                    <div className="text-lg font-bold text-semin-green">{gear.price} Kč</div>
+                    <div className="text-lg font-bold text-semin-green">{gear.price},-</div>
                   </div>
                 </div>
               </div>
@@ -357,13 +357,13 @@ export default function BookingForm({
                 return gear ? (
                   <div key={gearId} className="flex justify-between">
                     <span>{gear.emoji} {gear.name}</span>
-                    <span className="font-medium">{gear.price} Kč</span>
+                    <span className="font-medium">{gear.price},-</span>
                   </div>
                 ) : null
               })}
               <div className="border-t border-green-300 pt-2 mt-2 flex justify-between font-bold">
                 <span>Celkem vybavení:</span>
-                <span>{gearPrice} Kč</span>
+                <span>{gearPrice},-</span>
               </div>
             </div>
           </div>
@@ -387,10 +387,10 @@ export default function BookingForm({
             <div className="text-right">
               {gearPrice > 0 && (
                 <div className="text-sm opacity-90">
-                  Místo: {basePrice} Kč + Vybavení: {gearPrice} Kč
+                  Místo: {basePrice},- + Vybavení: {gearPrice},-
                 </div>
               )}
-              <div className="text-xl font-bold">{totalPrice} Kč</div>
+              <div className="text-xl font-bold">{totalPrice},-</div>
             </div>
           </div>
         )}

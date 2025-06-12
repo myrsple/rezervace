@@ -12,8 +12,8 @@ export default function AdminDashboard() {
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTab, setSelectedTab] = useState<'reservations' | 'spots' | 'competitions'>('reservations')
-  const [newCompetition, setNewCompetition] = useState({ name: '', date: '', capacity: '', entryFee: '' })
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'startDate', direction: 'desc' })
+  const [newCompetition, setNewCompetition] = useState({ name: '', date: '', endDate: '', capacity: '', entryFee: '' })
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' })
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; reservationId: string; customerName: string }>({ 
     isOpen: false, 
     reservationId: '', 
@@ -28,7 +28,7 @@ export default function AdminDashboard() {
     isOpen: false, 
     competition: null 
   })
-  const [editFormData, setEditFormData] = useState({ name: '', date: '', capacity: '', entryFee: '' })
+  const [editFormData, setEditFormData] = useState({ name: '', date: '', endDate: '', capacity: '', entryFee: '' })
   const [operationLoading, setOperationLoading] = useState({
     create: false,
     delete: false,
@@ -37,6 +37,11 @@ export default function AdminDashboard() {
   })
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [competitionSortConfigs, setCompetitionSortConfigs] = useState<Record<number, { key: string; direction: 'asc' | 'desc' }>>({})
+  const [deleteRegistrationConfirmation, setDeleteRegistrationConfirmation] = useState<{ isOpen: boolean; registrationId: string; customerName: string }>({
+    isOpen: false,
+    registrationId: '',
+    customerName: ''
+  })
 
   useEffect(() => {
     let isMounted = true;
@@ -103,6 +108,17 @@ export default function AdminDashboard() {
       setReservations(reservationsData)
       setFishingSpots(spotsData)
       setCompetitions(competitionsData)
+
+      // ensure default sorting: newest registrations first
+      setCompetitionSortConfigs(prev => {
+        const updated = { ...prev }
+        competitionsData.forEach(comp => {
+          if (!updated[comp.id]) {
+            updated[comp.id] = { key: 'registeredAt', direction: 'desc' }
+          }
+        })
+        return updated
+      })
     } catch (error) {
       console.error('Error fetching data:', error)
       showFeedback('error', 'Nepodařilo se načíst data')
@@ -173,12 +189,12 @@ export default function AdminDashboard() {
   }
 
   const createCompetition = async () => {
-    if (!newCompetition.name || !newCompetition.date || !newCompetition.capacity || !newCompetition.entryFee) {
+    if (!newCompetition.name || !newCompetition.date || !newCompetition.endDate || !newCompetition.capacity || !newCompetition.entryFee) {
       showFeedback('error', 'Prosím vyplňte všechna pole')
       return
     }
 
-    if (competitions.length >= 3) {
+    if (getActiveCompetitions().length >= 3) {
       showFeedback('error', 'Můžete mít maximálně 3 závody současně')
       return
     }
@@ -199,7 +215,7 @@ export default function AdminDashboard() {
 
       if (response.ok) {
         await fetchData()
-        setNewCompetition({ name: '', date: '', capacity: '', entryFee: '' })
+        setNewCompetition({ name: '', date: '', endDate: '', capacity: '', entryFee: '' })
         showFeedback('success', 'Závod byl úspěšně vytvořen')
       } else {
         const error = await response.json()
@@ -281,12 +297,13 @@ export default function AdminDashboard() {
   }
 
   const openEditCompetition = (competition: Competition) => {
-    const competitionDate = new Date(competition.date)
-    const dateTimeString = competitionDate.toISOString().slice(0, 16) // Format for datetime-local input
+    const startStr = new Date(competition.date).toISOString().slice(0, 16)
+    const endStr = competition.endDate ? new Date(competition.endDate).toISOString().slice(0,16) : ''
     
     setEditFormData({
       name: competition.name,
-      date: dateTimeString,
+      date: startStr,
+      endDate: endStr,
       capacity: competition.capacity.toString(),
       entryFee: competition.entryFee.toString()
     })
@@ -295,7 +312,7 @@ export default function AdminDashboard() {
 
   const closeEditCompetition = () => {
     setEditCompetition({ isOpen: false, competition: null })
-    setEditFormData({ name: '', date: '', capacity: '', entryFee: '' })
+    setEditFormData({ name: '', date: '', endDate: '', capacity: '', entryFee: '' })
   }
 
   const updateCompetition = async () => {
@@ -319,7 +336,8 @@ export default function AdminDashboard() {
           name: editFormData.name,
           date: editFormData.date,
           capacity: parseInt(editFormData.capacity),
-          entryFee: parseFloat(editFormData.entryFee)
+          entryFee: parseFloat(editFormData.entryFee),
+          endDate: editFormData.endDate
         }),
       })
 
@@ -341,9 +359,9 @@ export default function AdminDashboard() {
 
   const isCompetitionCompleted = (competition: Competition) => {
     const now = new Date()
-    const competitionDate = new Date(competition.date)
-    const endDate = addHours(competitionDate, 24) // Competition ends 24h after start
-    const visibilityEndDate = addHours(endDate, 48) // Show for 48h after end
+    const start = new Date(competition.date)
+    const end = competition.endDate ? new Date(competition.endDate) : addHours(start, 24)
+    const visibilityEndDate = addHours(end, 48) // Show for 48h after end
     return now > visibilityEndDate
   }
 
@@ -513,10 +531,13 @@ export default function AdminDashboard() {
         aValue = a.totalPrice;
         bValue = b.totalPrice;
         break;
-
       case 'isPaid':
         aValue = a.isPaid ? 1 : 0;
         bValue = b.isPaid ? 1 : 0;
+        break;
+      case 'createdAt':
+        aValue = new Date(a.createdAt);
+        bValue = new Date(b.createdAt);
         break;
       default:
         return 0;
@@ -529,7 +550,7 @@ export default function AdminDashboard() {
 
   const handleCompetitionSort = (competitionId: number, key: string) => {
     setCompetitionSortConfigs(prev => {
-      const current = prev[competitionId] || { key: 'customerName', direction: 'desc' }
+      const current = prev[competitionId] || { key: 'registeredAt', direction: 'desc' }
       let direction: 'asc' | 'desc' = 'desc'
       if (current.key === key && current.direction === 'desc') {
         direction = 'asc'
@@ -539,7 +560,7 @@ export default function AdminDashboard() {
   }
 
   const getSortedRegistrations = (competition: Competition) => {
-    const config = competitionSortConfigs[competition.id] || { key: 'customerName', direction: 'desc' }
+    const config = competitionSortConfigs[competition.id] || { key: 'registeredAt', direction: 'desc' }
     const regs = [...(competition.registrations || [])]
     regs.sort((a, b) => {
       let aValue: any, bValue: any
@@ -560,6 +581,10 @@ export default function AdminDashboard() {
           aValue = a.isPaid ? 1 : 0
           bValue = b.isPaid ? 1 : 0
           break
+        case 'registeredAt':
+          aValue = new Date(a.registeredAt || a.createdAt)
+          bValue = new Date(b.registeredAt || b.createdAt)
+          break
         default:
           return 0
       }
@@ -568,6 +593,37 @@ export default function AdminDashboard() {
       return 0
     })
     return regs
+  }
+
+  const deleteCompetitionRegistration = async (registrationId: string) => {
+    if (operationLoading.delete) return
+
+    setOperationLoading(prev => ({ ...prev, delete: true }))
+    showFeedback('success', 'Mažu registraci...')
+
+    try {
+      const response = await fetch(`/api/competition-registrations?id=${registrationId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        setDeleteRegistrationConfirmation({ isOpen: false, registrationId: '', customerName: '' })
+        await fetchData()
+        showFeedback('success', 'Registrace byla smazána')
+      } else {
+        const errorData = await response.json()
+        showFeedback('error', `Chyba při mazání registrace: ${errorData.error || 'Neznámá chyba'}`)
+      }
+    } catch (error) {
+      console.error('Error deleting registration:', error)
+      showFeedback('error', 'Chyba při mazání registrace')
+    } finally {
+      setOperationLoading(prev => ({ ...prev, delete: false }))
+    }
+  }
+
+  const openDeleteRegistrationConfirmation = (registrationId: string, customerName: string) => {
+    setDeleteRegistrationConfirmation({ isOpen: true, registrationId, customerName })
   }
 
   if (loading) {
@@ -644,91 +700,96 @@ export default function AdminDashboard() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th 
+                    {/* Rybář */}
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => handleSort('customerName')}
                     >
                       <div className="flex items-center">
                         Rybář
                         {sortConfig.key === 'customerName' && (
-                          <span className="ml-1">
-                            {sortConfig.direction === 'desc' ? '↓' : '↑'}
-                          </span>
+                          <span className="ml-1">{sortConfig.direction === 'desc' ? '↓' : '↑'}</span>
                         )}
                       </div>
                     </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => handleSort('variableSymbol')}
-                    >
-                      <div className="flex items-center">
-                        VS
-                        {sortConfig.key === 'variableSymbol' && (
-                          <span className="ml-1">
-                            {sortConfig.direction === 'desc' ? '↓' : '↑'}
-                          </span>
-                        )}
-                      </div>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Vybavení
-                    </th>
-                    <th 
+                    {/* Místo */}
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => handleSort('spotId')}
                     >
                       <div className="flex items-center">
                         Místo
                         {sortConfig.key === 'spotId' && (
-                          <span className="ml-1">
-                            {sortConfig.direction === 'desc' ? '↓' : '↑'}
-                          </span>
+                          <span className="ml-1">{sortConfig.direction === 'desc' ? '↓' : '↑'}</span>
                         )}
                       </div>
                     </th>
-                    <th 
+                    {/* Datum a délka */}
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => handleSort('startDate')}
                     >
                       <div className="flex items-center">
                         Datum a délka
                         {sortConfig.key === 'startDate' && (
-                          <span className="ml-1">
-                            {sortConfig.direction === 'desc' ? '↓' : '↑'}
-                          </span>
+                          <span className="ml-1">{sortConfig.direction === 'desc' ? '↓' : '↑'}</span>
                         )}
                       </div>
                     </th>
-                    <th 
+                    {/* Vybavení */}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Vybavení
+                    </th>
+                    {/* Cena */}
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => handleSort('totalPrice')}
                     >
                       <div className="flex items-center">
                         Cena
                         {sortConfig.key === 'totalPrice' && (
-                          <span className="ml-1">
-                            {sortConfig.direction === 'desc' ? '↓' : '↑'}
-                          </span>
+                          <span className="ml-1">{sortConfig.direction === 'desc' ? '↓' : '↑'}</span>
                         )}
                       </div>
                     </th>
-                    <th 
+                    {/* VS */}
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('variableSymbol')}
+                    >
+                      <div className="flex items-center">
+                        VS
+                        {sortConfig.key === 'variableSymbol' && (
+                          <span className="ml-1">{sortConfig.direction === 'desc' ? '↓' : '↑'}</span>
+                        )}
+                      </div>
+                    </th>
+                    {/* Placeno */}
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => handleSort('isPaid')}
                     >
                       <div className="flex items-center">
                         Placeno?
                         {sortConfig.key === 'isPaid' && (
-                          <span className="ml-1">
-                            {sortConfig.direction === 'desc' ? '↓' : '↑'}
-                          </span>
+                          <span className="ml-1">{sortConfig.direction === 'desc' ? '↓' : '↑'}</span>
                         )}
                       </div>
                     </th>
-
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Akce
+                    {/* Registrováno */}
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('createdAt')}
+                    >
+                      <div className="flex items-center">
+                        Registrováno
+                        {sortConfig.key === 'createdAt' && (
+                          <span className="ml-1">{sortConfig.direction === 'desc' ? '↓' : '↑'}</span>
+                        )}
+                      </div>
                     </th>
+                    {/* Smazat */}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Smazat</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -747,9 +808,18 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {reservation.variableSymbol || '—'}
+                      {/* Místo */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#{reservation.spotId}</td>
+                      {/* Datum a délka */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {format(new Date(reservation.startDate), 'MMM d, yyyy')}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {reservation.duration === 'day' ? 'Jeden den' : reservation.duration === '24h' ? '24 hodin' : '48 hodin'}
+                        </div>
                       </td>
+                      {/* Vybavení */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         {reservation.rentedGear ? (
                           <div className="space-y-1">
@@ -773,28 +843,15 @@ export default function AdminDashboard() {
                           <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        #{reservation.spotId}
-                      </td>
+                      {/* Cena */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {format(new Date(reservation.startDate), 'MMM d, yyyy')}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {reservation.duration === 'day' ? 'Jeden den' :
-                           reservation.duration === '24h' ? '24 hodin' : '48 hodin'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 font-medium">
-                          {reservation.totalPrice} Kč
-                        </div>
+                        <div className="text-sm text-gray-900 font-medium">{reservation.totalPrice} Kč</div>
                         {reservation.rentedGear && (
-                          <div className="text-xs text-green-600">
-                            + vybavení {reservation.gearPrice} Kč
-                          </div>
+                          <div className="text-xs text-green-600">+ vybavení {reservation.gearPrice} Kč</div>
                         )}
                       </td>
+                      {/* VS */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reservation.variableSymbol || '—'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <input
                           type="checkbox"
@@ -802,6 +859,9 @@ export default function AdminDashboard() {
                           onChange={(e) => updateReservationPaidStatus(reservation.id, e.target.checked)}
                           className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                         />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {format(new Date(reservation.createdAt), 'd.M.yyyy HH:mm', { locale: cs })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
@@ -917,6 +977,13 @@ export default function AdminDashboard() {
                   disabled={operationLoading.create}
                 />
                 <input
+                  type="datetime-local"
+                  value={newCompetition.endDate}
+                  onChange={(e) => setNewCompetition({ ...newCompetition, endDate: e.target.value })}
+                  className="px-4 py-2 border-2 border-gray-200 rounded-lg"
+                  disabled={operationLoading.create}
+                />
+                <input
                   type="number"
                   placeholder="Kapacita"
                   value={newCompetition.capacity}
@@ -975,7 +1042,12 @@ export default function AdminDashboard() {
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900">{competition.name}</h4>
                           <div className="text-sm text-gray-600 mt-1">
-                            <div>Datum a čas: {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}</div>
+                            <div>
+                              Datum: {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}
+                              {competition.endDate && (
+                                <> – {format(new Date(competition.endDate), 'dd.MM.yyyy HH:mm', { locale: cs })}</>
+                              )}
+                            </div>
                             <div>Kapacita: {competition.registrations?.length || 0} / {competition.capacity} účastníků</div>
                             <div>Vstupné: {competition.entryFee} Kč</div>
                           </div>
@@ -1089,6 +1161,18 @@ export default function AdminDashboard() {
                                       )}
                                     </div>
                                   </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'registeredAt')}>
+                                    <div className="flex items-center">
+                                      Registrováno
+                                      {competitionSortConfigs[competition.id]?.key === 'registeredAt' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Smazat
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
@@ -1141,6 +1225,18 @@ export default function AdminDashboard() {
                                         className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                                       />
                                     </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                      {format(new Date(registration.registeredAt || registration.createdAt), 'd.M.yyyy HH:mm', { locale: cs })}
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">
+                                      <button
+                                        onClick={() => openDeleteRegistrationConfirmation(registration.id, registration.customerName)}
+                                        className="inline-flex items-center px-2 py-1 border border-red-300 rounded text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+                                        title="Smazat registraci"
+                                      >
+                                        🗑️
+                                      </button>
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1176,7 +1272,12 @@ export default function AdminDashboard() {
                         <div>
                           <h4 className="text-lg font-semibold text-gray-700">{competition.name}</h4>
                           <div className="text-sm text-gray-500 mt-1">
-                            <div>Datum a čas: {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}</div>
+                            <div>
+                              Datum: {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}
+                              {competition.endDate && (
+                                <> – {format(new Date(competition.endDate), 'dd.MM.yyyy HH:mm', { locale: cs })}</>
+                              )}
+                            </div>
                             <div>Počet účastníků: {competition.registrations?.length || 0} / {competition.capacity}</div>
                             <div>Vstupné: {competition.entryFee} Kč</div>
                           </div>
@@ -1244,6 +1345,18 @@ export default function AdminDashboard() {
                                       )}
                                     </div>
                                   </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleCompetitionSort(competition.id, 'registeredAt')}>
+                                    <div className="flex items-center">
+                                      Registrováno
+                                      {competitionSortConfigs[competition.id]?.key === 'registeredAt' && (
+                                        <span className="ml-1">{competitionSortConfigs[competition.id]?.direction === 'desc' ? '↓' : '↑'}</span>
+                                      )}
+                                    </div>
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Smazat
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
@@ -1295,6 +1408,18 @@ export default function AdminDashboard() {
                                         onChange={(e) => updateCompetitionPaidStatus(registration.id, e.target.checked)}
                                         className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                                       />
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                      {format(new Date(registration.registeredAt || registration.createdAt), 'd.M.yyyy HH:mm', { locale: cs })}
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">
+                                      <button
+                                        onClick={() => openDeleteRegistrationConfirmation(registration.id, registration.customerName)}
+                                        className="inline-flex items-center px-2 py-1 border border-red-300 rounded text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+                                        title="Smazat registraci"
+                                      >
+                                        🗑️
+                                      </button>
                                     </td>
                                   </tr>
                                 ))}
@@ -1375,6 +1500,16 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Datum a konec</label>
+                      <input
+                        type="datetime-local"
+                        value={editFormData.endDate}
+                        onChange={(e) => setEditFormData({ ...editFormData, endDate: e.target.value })}
+                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg"
+                        disabled={operationLoading.update}
+                      />
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Kapacita</label>
                       <input
                         type="number"
@@ -1420,6 +1555,45 @@ export default function AdminDashboard() {
                         'Uložit změny'
                       )}
                     </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Delete Registration Confirmation Modal */}
+            {deleteRegistrationConfirmation.isOpen && (
+              <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+                <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+                  <div className="p-6">
+                    <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                      <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Smazat registraci
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-6">
+                        Opravdu chcete smazat registraci pro <strong>{deleteRegistrationConfirmation.customerName}</strong>? Tuto akci nelze vrátit zpět.
+                      </p>
+                      <div className="flex space-x-3 justify-center">
+                        <button
+                          onClick={() => setDeleteRegistrationConfirmation({ isOpen: false, registrationId: '', customerName: '' })}
+                          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                          disabled={operationLoading.delete}
+                        >
+                          Zrušit
+                        </button>
+                        <button
+                          onClick={() => deleteCompetitionRegistration(deleteRegistrationConfirmation.registrationId)}
+                          className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={operationLoading.delete}
+                        >
+                          {operationLoading.delete ? 'Mažu…' : 'Smazat registraci'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

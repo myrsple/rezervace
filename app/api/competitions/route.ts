@@ -38,7 +38,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, date, capacity, entryFee } = body
+    const { name, date, endDate, capacity, entryFee } = body
 
     if (!name || !date || !capacity || !entryFee) {
       return NextResponse.json(
@@ -47,14 +47,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Ensure endDate is after start date; default to +24h if not provided
+    const startDateObj = new Date(date)
+    const endDateObj = endDate ? new Date(endDate) : new Date(startDateObj.getTime() + 24 * 60 * 60 * 1000)
+
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+      return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+    }
+
+    if (endDateObj <= startDateObj) {
+      return NextResponse.json({ error: 'endDate must be after start date' }, { status: 400 })
+    }
+
     const competition = await prisma.competition.create({
       data: {
         name,
-        date: new Date(date),
+        date: startDateObj,
+        // @ts-ignore endDate available after next prisma generate
+        endDate: endDateObj,
         capacity: parseInt(capacity),
         entryFee: parseFloat(entryFee),
         isActive: true
-      },
+      } as any,
       include: {
         registrations: true
       }

@@ -72,6 +72,8 @@ model Competition {
   id            Int                       @id @default(autoincrement())
   name          String
   date          DateTime
+  /// End date and time of competition (inclusive)
+  endDate       DateTime?
   capacity      Int
   entryFee      Float                     @default(0) // Entry fee in CZK
   isActive      Boolean                   @default(true)

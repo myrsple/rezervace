@@ -71,6 +71,12 @@ export interface Competition {
   id: number
   name: string
   date: string
+  /**
+   * End date
+   *
+   * and time of competition. If omitted (old records) the competition is considered 24h long starting from {@link date}.
+   */
+  endDate?: string
   capacity: number
   entryFee: number
   isActive: boolean

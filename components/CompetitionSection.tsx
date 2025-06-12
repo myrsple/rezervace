@@ -3,7 +3,7 @@
 import React from 'react'
 import useSWR from 'swr'
 import { Competition } from '@/types'
-import { format, startOfDay } from 'date-fns'
+import { format, startOfDay, addHours } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import CompetitionRegistration from './CompetitionRegistration'
 
@@ -21,7 +21,11 @@ export default function CompetitionSection() {
   const competitions = React.useMemo(() => {
     if (!data) return []
     const today = startOfDay(new Date())
-    return data.filter((comp: Competition) => comp.isActive && startOfDay(new Date(comp.date)) >= today)
+    return data.filter((comp: Competition) => {
+      if (!comp.isActive) return false
+      const end = comp.endDate ? new Date(comp.endDate) : addHours(new Date(comp.date),24)
+      return startOfDay(end) >= today
+    })
   }, [data])
 
   const loading = !data && !error
@@ -122,6 +126,9 @@ export default function CompetitionSection() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}
+                  {competition.endDate && (
+                    <> – {format(new Date(competition.endDate), 'dd.MM.yyyy HH:mm', { locale: cs })}</>
+                  )}
                 </div>
                 <div className="flex items-center">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

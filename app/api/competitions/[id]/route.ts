@@ -51,6 +51,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     
     if (body.name !== undefined) updateData.name = body.name
     if (body.date !== undefined) updateData.date = new Date(body.date)
+    if (body.endDate !== undefined) updateData.endDate = new Date(body.endDate)
     if (body.capacity !== undefined) updateData.capacity = parseInt(body.capacity)
     if (body.entryFee !== undefined) updateData.entryFee = parseFloat(body.entryFee)
     if (body.isActive !== undefined) updateData.isActive = body.isActive

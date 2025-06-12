@@ -5,7 +5,7 @@ import FishingSpotSelector from './FishingSpotSelector'
 import ReservationCalendar from './ReservationCalendar'
 import BookingForm from './BookingForm'
 import { FishingSpot, Reservation } from '@/types'
-import { format, addDays, startOfDay } from 'date-fns'
+import { format, addDays, startOfDay, addHours } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import { getWeatherForDate, WeatherData } from '@/lib/weather'
 import ReservationSummary from './ReservationSummary'
@@ -76,7 +76,7 @@ export default function ReservationSystem() {
 
     // If selected spot does not allow long stays, force duration to 'day'
     const allowsLong = spot.name === 'Lovné místo VIP' || (spot.number && spot.number <= 6)
-    if (!allowsLong && (selectedDuration === '24h' || selectedDuration === '48h')) {
+    if (!allowsLong && ['24h','48h','72h','96h'].includes(selectedDuration)) {
       setSelectedDuration('day')
     }
 
@@ -95,14 +95,20 @@ export default function ReservationSystem() {
     const dayOk = isDayPossible(date)
     const h24Ok = isDurationPossible('24h', date)
     const h48Ok = isDurationPossible('48h', date)
+    const h72Ok = isDurationPossible('72h', date)
+    const h96Ok = isDurationPossible('96h', date)
 
     let desired: string = selectedDuration
     if (selectedDuration === 'day' && !dayOk) {
-      desired = h24Ok ? '24h' : h48Ok ? '48h' : selectedDuration
+      desired = h24Ok ? '24h' : h48Ok ? '48h' : h72Ok ? '72h' : h96Ok ? '96h' : selectedDuration
     } else if (selectedDuration === '24h' && !h24Ok) {
-      desired = dayOk ? 'day' : h48Ok ? '48h' : selectedDuration
+      desired = h48Ok ? '48h' : h72Ok ? '72h' : h96Ok ? '96h' : dayOk ? 'day' : selectedDuration
     } else if (selectedDuration === '48h' && !h48Ok) {
-      desired = h24Ok ? '24h' : dayOk ? 'day' : selectedDuration
+      desired = h72Ok ? '72h' : h96Ok ? '96h' : h24Ok ? '24h' : dayOk ? 'day' : selectedDuration
+    } else if (selectedDuration === '72h' && !h72Ok) {
+      desired = h96Ok ? '96h' : h48Ok ? '48h' : h24Ok ? '24h' : dayOk ? 'day' : selectedDuration
+    } else if (selectedDuration === '96h' && !h96Ok) {
+      desired = h72Ok ? '72h' : h48Ok ? '48h' : h24Ok ? '24h' : dayOk ? 'day' : selectedDuration
     }
 
     if (desired !== selectedDuration) {
@@ -110,7 +116,7 @@ export default function ReservationSystem() {
     }
   }
 
-  const isDurationPossible = (duration: '24h' | '48h', baseDate: Date | null = null) => {
+  const isDurationPossible = (duration: '24h' | '48h' | '72h' | '96h', baseDate: Date | null = null) => {
     const dateToCheck = baseDate ?? selectedDate
     if (!dateToCheck || !selectedSpot) return true
 
@@ -136,8 +142,10 @@ export default function ReservationSystem() {
     const isCompetitionDay = (d: Date)=>{
       if (!competitionsData) return false
       return competitionsData.some((c: any)=>{
-        const compDay = startOfDay(new Date(c.date))
-        return compDay.getTime() === startOfDay(d).getTime()
+        const compStart = startOfDay(new Date(c.date))
+        const compEnd = c.endDate ? startOfDay(new Date(c.endDate)) : startOfDay(addHours(new Date(c.date),24))
+        const day = startOfDay(d)
+        return day >= compStart && day <= compEnd
       })
     }
 
@@ -152,12 +160,37 @@ export default function ReservationSystem() {
                isHalfBooked(addDays(dateToCheck,1),'evening') ||
                isHalfBooked(addDays(dateToCheck,2),'morning'))
     }
+    if (duration === '72h') {
+      if([dateToCheck,addDays(dateToCheck,1),addDays(dateToCheck,2),addDays(dateToCheck,3)].some(isCompetitionDay)) return false
+      return !(isHalfBooked(dateToCheck,'evening') ||
+               isHalfBooked(addDays(dateToCheck,1),'morning') ||
+               isHalfBooked(addDays(dateToCheck,1),'evening') ||
+               isHalfBooked(addDays(dateToCheck,2),'morning') ||
+               isHalfBooked(addDays(dateToCheck,2),'evening') ||
+               isHalfBooked(addDays(dateToCheck,3),'morning'))
+    }
+    if (duration === '96h') {
+      if([dateToCheck,addDays(dateToCheck,1),addDays(dateToCheck,2),addDays(dateToCheck,3),addDays(dateToCheck,4)].some(isCompetitionDay)) return false
+      return !(isHalfBooked(dateToCheck,'evening') ||
+               isHalfBooked(addDays(dateToCheck,1),'morning') ||
+               isHalfBooked(addDays(dateToCheck,1),'evening') ||
+               isHalfBooked(addDays(dateToCheck,2),'morning') ||
+               isHalfBooked(addDays(dateToCheck,2),'evening') ||
+               isHalfBooked(addDays(dateToCheck,3),'morning') ||
+               isHalfBooked(addDays(dateToCheck,3),'evening') ||
+               isHalfBooked(addDays(dateToCheck,4),'morning'))
+    }
     return true
   }
 
   const isDayPossible = (baseDate: Date | null = null) => {
     const dateToCheck = baseDate ?? selectedDate
     if (!dateToCheck || !selectedSpot) return true
+
+    // VIP and spots 1-6 cannot be booked for single-day reservations
+    if (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) {
+      return false
+    }
     const spotRes = reservations.filter(r=> r.spotId===selectedSpot.id && r.status!=='CANCELLED')
     const halfBooked=(half:'morning'|'evening')=>{
       const start=new Date(dateToCheck)
@@ -166,8 +199,13 @@ export default function ReservationSystem() {
       else{start.setHours(12,0,0,0); end.setDate(end.getDate()+1); end.setHours(0,0,0,0)}
       return spotRes.some(res=>{const s=new Date(res.startDate); const e=new Date(res.endDate); return e>start && s<end})
     }
-    const isCompetitionDay= (competitionsData??[]).some((c:any)=> startOfDay(new Date(c.date)).getTime()===startOfDay(dateToCheck).getTime())
-    return !(halfBooked('morning')||halfBooked('evening')||isCompetitionDay)
+    const isCompetitionDayInline = (competitionsData??[]).some((c:any)=>{
+      const startC = startOfDay(new Date(c.date))
+      const endC = c.endDate ? startOfDay(new Date(c.endDate)) : startOfDay(addHours(new Date(c.date),24))
+      const d = startOfDay(dateToCheck)
+      return d >= startC && d <= endC
+    })
+    return !(halfBooked('morning')||halfBooked('evening')||isCompetitionDayInline)
   }
 
   const handleReservationComplete = () => {
@@ -176,6 +214,16 @@ export default function ReservationSystem() {
     
     // Don't reset the form state immediately
     // The user needs to see the success message first
+  }
+
+  const getPrice = (durationKey: string): number => {
+    const isVIP = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || selectedSpot.number === 99) : false
+    if (isVIP) {
+      const vipMap: Record<string, number> = { '24h': 1200, '48h': 2000, '72h': 3200, '96h': 4000 }
+      return vipMap[durationKey] || 0
+    }
+    const stdMap: Record<string, number> = { 'day': 200, '24h': 350, '48h': 600, '72h': 950, '96h': 1200 }
+    return stdMap[durationKey] || 0
   }
 
   if (loading) {
@@ -243,58 +291,101 @@ export default function ReservationSystem() {
           
           {/* Duration Selection */}
           <div className="mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {(() => {
-                                const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : false
-                                const unavailable = allowsLong || !isDayPossible()
-                                return (
-                                  <button
-                                    type="button"
-                                    onClick={() => !unavailable && setSelectedDuration('day')}
-                                    className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === 'day' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
-                                    disabled={unavailable}
-                                  >
-                                    <div className={`font-bold text-lg ${selectedDuration === 'day' ? 'text-semin-blue' : 'text-semin-gray'}`}>Denní</div>
-                                    <div className={`text-sm ${selectedDuration === 'day' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>8:00 - 22:00</div>
-                                    <div className="text-2xl font-bold text-semin-green">200,-</div>
-                                  </button>
-                                )
-                              })()}
+            {(()=>{
+              const longOnly = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : false
+              const dayOnly = selectedSpot ? !(selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : false
+              const containerClasses = dayOnly ? 'flex justify-center' : (longOnly ? 'flex flex-wrap justify-center gap-4' : 'grid grid-cols-1 md:grid-cols-3 gap-4 justify-items-center')
+              const extraCols = longOnly ? '' : ''
+              return (
+                <div className={containerClasses}>
+                  {(() => {
+                    const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : false
+                    if(allowsLong) return null
+                    const unavailable = !isDayPossible()
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => !unavailable && setSelectedDuration('day')}
+                        className={`w-full md:w-64 p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === 'day' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                        disabled={unavailable}
+                      >
+                        <div className={`font-bold text-lg ${selectedDuration === 'day' ? 'text-semin-blue' : 'text-semin-gray'}`}>Denní</div>
+                        <div className={`text-sm ${selectedDuration === 'day' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>8:00 - 22:00</div>
+                        <div className="text-2xl font-bold text-semin-green">200,-</div>
+                      </button>
+                    )
+                  })()}
                 
-                {(() => {
-                  const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : true
-                  const unavailable = !allowsLong || !isDurationPossible('24h')
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => !unavailable && setSelectedDuration('24h')}
-                      className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '24h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
-                      disabled={unavailable}
-                    >
-                      <div className={`font-bold text-lg ${selectedDuration === '24h' ? 'text-semin-blue' : 'text-semin-gray'}`}>24 hodin</div>
-                      <div className={`text-sm ${selectedDuration === '24h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Poledne</div>
-                      <div className="text-2xl font-bold text-semin-green">350,-</div>
-                    </button>
-                  )
-                })()}
+                  {(() => {
+                    const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : true
+                    if(!allowsLong) return null
+                    const unavailable = !isDurationPossible('24h')
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => !unavailable && setSelectedDuration('24h')}
+                        className={`w-full md:w-64 p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '24h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                        disabled={unavailable}
+                      >
+                        <div className={`font-bold text-lg ${selectedDuration === '24h' ? 'text-semin-blue' : 'text-semin-gray'}`}>24 hodin</div>
+                        <div className={`text-sm ${selectedDuration === '24h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Poledne</div>
+                        <div className="text-2xl font-bold text-semin-green">{getPrice('24h')},-</div>
+                      </button>
+                    )
+                  })()}
 
-                {(() => {
-                  const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : true
-                  const unavailable = !allowsLong || !isDurationPossible('48h')
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => !unavailable && setSelectedDuration('48h')}
-                      className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '48h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
-                      disabled={unavailable}
-                    >
-                      <div className={`font-bold text-lg ${selectedDuration === '48h' ? 'text-semin-blue' : 'text-semin-gray'}`}>48 hodin</div>
-                      <div className={`text-sm ${selectedDuration === '48h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Den – Poledne</div>
-                      <div className="text-2xl font-bold text-semin-green">600,-</div>
-                    </button>
-                  )
-                })()}
-            </div>
+                  {(() => {
+                    const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : true
+                    if(!allowsLong) return null
+                    const unavailable = !isDurationPossible('48h')
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => !unavailable && setSelectedDuration('48h')}
+                        className={`w-full md:w-64 p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '48h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                        disabled={unavailable}
+                      >
+                        <div className={`font-bold text-lg ${selectedDuration === '48h' ? 'text-semin-blue' : 'text-semin-gray'}`}>48 hodin</div>
+                        <div className={`text-sm ${selectedDuration === '48h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Den – Poledne</div>
+                        <div className="text-2xl font-bold text-semin-green">{getPrice('48h')},-</div>
+                      </button>
+                    )
+                  })()}
+
+                  {(() => {
+                    const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : true
+                    if(!allowsLong) return null
+                    const unavailable = !isDurationPossible('72h')
+                    return (
+                      <button type="button"
+                        onClick={() => !unavailable && setSelectedDuration('72h')}
+                        className={`w-full md:w-64 p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '72h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                        disabled={unavailable}>
+                        <div className={`font-bold text-lg ${selectedDuration==='72h'?'text-semin-blue':'text-semin-gray'}`}>72 hodin</div>
+                        <div className={`text-sm ${selectedDuration==='72h'?'text-semin-blue/70':'text-semin-gray/70'}`}>Poledne – 2 dny – Poledne</div>
+                        <div className="text-2xl font-bold text-semin-green">{getPrice('72h')},-</div>
+                      </button>
+                    )
+                  })()}
+
+                  {(() => {
+                    const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : true
+                    if(!allowsLong) return null
+                    const unavailable = !isDurationPossible('96h')
+                    return (
+                      <button type="button"
+                        onClick={() => !unavailable && setSelectedDuration('96h')}
+                        className={`w-full md:w-64 p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '96h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                        disabled={unavailable}>
+                        <div className={`font-bold text-lg ${selectedDuration==='96h'?'text-semin-blue':'text-semin-gray'}`}>96 hodin</div>
+                        <div className={`text-sm ${selectedDuration==='96h'?'text-semin-blue/70':'text-semin-gray/70'}`}>Poledne – 3 dny – Poledne</div>
+                        <div className="text-2xl font-bold text-semin-green">{getPrice('96h')},-</div>
+                      </button>
+                    )
+                  })()}
+                </div>
+              )
+            })()}
           </div>
 
           <ReservationCalendar

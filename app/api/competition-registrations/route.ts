@@ -116,4 +116,46 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const registrationId = searchParams.get('id')
+
+    if (!registrationId) {
+      return NextResponse.json(
+        { error: 'Registration ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if registration exists
+    const existingRegistration = await prisma.competitionRegistration.findUnique({
+      where: { id: registrationId }
+    })
+
+    if (!existingRegistration) {
+      return NextResponse.json(
+        { error: 'Registration not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete the registration
+    await prisma.competitionRegistration.delete({
+      where: { id: registrationId }
+    })
+
+    return NextResponse.json(
+      { message: 'Registration deleted successfully' },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error('Error deleting competition registration:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete competition registration' },
+      { status: 500 }
+    )
+  }
 } 

@@ -20,6 +20,15 @@ export default function RootLayout({
     <html lang="cs">
       <body className={inter.className}>
         <div className="min-h-screen bg-gradient-to-br from-semin-light-blue to-semin-light-gray">
+          <header className="bg-white">
+            <div className="max-w-7xl mx-auto px-4 pt-3 pb-0 flex justify-center">
+              <img
+                src="/logo-ryby.jpg"
+                alt="Ryby Semín – logo"
+                className="h-auto max-h-28 w-auto"
+              />
+            </div>
+          </header>
           <Navigation />
           {children}
         </div>

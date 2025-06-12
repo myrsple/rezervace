@@ -14,10 +14,27 @@ interface BookingFormProps {
   onComplete: () => void
 }
 
-const PRICING = {
+const STANDARD_PRICING: Record<string, number> = {
   day: 200,
   '24h': 350,
-  '48h': 600
+  '48h': 600,
+  '72h': 950,
+  '96h': 1200,
+}
+
+const VIP_PRICING: Record<string, number> = {
+  '24h': 1200,
+  '48h': 2000,
+  '72h': 3200,
+  '96h': 4000,
+}
+
+const getBasePrice = (duration: string, spot: FishingSpot): number => {
+  const isVIP = spot.name === 'Lovné místo VIP' || spot.number === 99
+  if (isVIP) {
+    return VIP_PRICING[duration] || 0
+  }
+  return STANDARD_PRICING[duration] || 0
 }
 
 export default function BookingForm({
@@ -39,7 +56,7 @@ export default function BookingForm({
   const [success, setSuccess] = useState(false)
   const [reservationData, setReservationData] = useState<any>(null)
 
-  const basePrice = PRICING[duration as keyof typeof PRICING] || 0
+  const basePrice = getBasePrice(duration, spot)
   const gearPrice = getGearTotalPrice(selectedGear)
   const totalPrice = basePrice + gearPrice
 

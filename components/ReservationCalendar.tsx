@@ -86,11 +86,15 @@ export default function ReservationCalendar({
     }
 
     const hasCompetition = competitions.some(competition => {
-      const competitionDate = startOfDay(new Date(competition.date))
-      const endDate = addHours(competitionDate, 24)
-      const visibilityEndDate = addHours(endDate, 48)
+      const start = startOfDay(new Date(competition.date))
+      const end = competition.endDate ? startOfDay(new Date(competition.endDate)) : startOfDay(addHours(new Date(competition.date), 24))
+      const isInRange = dayStart >= start && dayStart <= end
+
+      if (!isInRange) return false
+
+      const visibilityEndDate = addHours(end, 48)
       const now = new Date()
-      return competitionDate.getTime() === dayStart.getTime() && competition.isActive && isBefore(now, visibilityEndDate)
+      return competition.isActive && isBefore(now, visibilityEndDate)
     })
 
     if (hasCompetition) {
@@ -164,10 +168,14 @@ export default function ReservationCalendar({
       });
     }
 
-    // For 'day' duration: allow click if either full day is available (usual case)
-    // OR if a 24h/48h stay could legitimately start here so that UI can auto-switch
     const dayAvailable = getDateAvailability(date) === 'available';
-    if (dayAvailable) return true;
+
+    // If the requested duration is a single-day booking but the selected spot only allows long stays, disallow selection
+    const spotAllowsDay = !(spot.name === 'Lovné místo VIP' || (spot.number && spot.number <= 6));
+    if (duration === 'day' && !spotAllowsDay) return false;
+
+    // Only immediately return for a free day if we actually want a day booking
+    if (dayAvailable && duration === 'day') return true;
 
     // If not dayAvailable, evaluate if 24h or 48h would fit from this date.
     const eveningBusy = isHalfBooked(date,'evening');
@@ -178,8 +186,10 @@ export default function ReservationCalendar({
 
     const can24hFromHere = !eveningBusy && !nextMorningBusy && getDateAvailability(date)!=='competition' && getDateAvailability(addDays(date,1))!=='competition';
     const can48hFromHere = !eveningBusy && !day1MorningBusy && !day1EveningBusy && !day2MorningBusy && [date, addDays(date,1), addDays(date,2)].every(d=>getDateAvailability(d)!=='competition');
+    const can72hFromHere = !eveningBusy && !day1MorningBusy && !day1EveningBusy && !day2MorningBusy && !isHalfBooked(addDays(date,2),'evening') && !isHalfBooked(addDays(date,3),'morning') && [date,addDays(date,1),addDays(date,2),addDays(date,3)].every(d=>getDateAvailability(d)!=='competition');
+    const can96hFromHere = can72hFromHere && !isHalfBooked(addDays(date,3),'evening') && !isHalfBooked(addDays(date,4),'morning') && getDateAvailability(addDays(date,4))!=='competition';
 
-    return can24hFromHere || can48hFromHere;
+    return can24hFromHere || can48hFromHere || can72hFromHere || can96hFromHere;
   }
 
   const getDayClasses = (
@@ -357,6 +367,28 @@ export default function ReservationCalendar({
                   isInSelectedRange = true;
                   selectedHalf = 'morning';
                 }
+              } else if (duration === '72h') {
+                if (isSameDay(date, selectedDate)) {
+                  isInSelectedRange = true;
+                  selectedHalf = 'evening';
+                } else if (isSameDay(date, addDays(selectedDate, 1)) || isSameDay(date, addDays(selectedDate,2))) {
+                  isInSelectedRange = true;
+                  selectedHalf = 'full';
+                } else if (isSameDay(date, addDays(selectedDate,3))) {
+                  isInSelectedRange = true;
+                  selectedHalf = 'morning';
+                }
+              } else if (duration === '96h') {
+                if (isSameDay(date, selectedDate)) {
+                  isInSelectedRange = true;
+                  selectedHalf = 'evening';
+                } else if (isSameDay(date, addDays(selectedDate, 1)) || isSameDay(date, addDays(selectedDate,2)) || isSameDay(date, addDays(selectedDate,3))) {
+                  isInSelectedRange = true;
+                  selectedHalf = 'full';
+                } else if (isSameDay(date, addDays(selectedDate,4))) {
+                  isInSelectedRange = true;
+                  selectedHalf = 'morning';
+                }
               } else if (duration === 'day') {
                 isInSelectedRange = isSameDay(date, selectedDate);
                 selectedHalf = 'full';
@@ -455,11 +487,18 @@ export default function ReservationCalendar({
           <h4 className="text-lg font-bold text-purple-900 mb-2">Nadcházející závody</h4>
           <div className="space-y-2">
             {competitions
-              .filter(comp => new Date(comp.date) >= startOfDay(new Date()))
+              .filter(comp => {
+                const today = startOfDay(new Date())
+                const end = comp.endDate ? new Date(comp.endDate) : addHours(new Date(comp.date),24)
+                return end >= today
+              })
               .map(comp => (
                 <div key={comp.id} className="flex items-center space-x-3 text-sm">
-                  <div className="w-24 text-gray-700 font-medium">
-                    {format(new Date(comp.date), 'dd. MM. yyyy')}
+                  <div className="w-48 text-gray-700 font-medium">
+                    {format(new Date(comp.date), 'dd.MM.yyyy')}
+                    {comp.endDate && (
+                      <> – {format(new Date(comp.endDate), 'dd.MM.yyyy')}</>
+                    )}
                   </div>
                   <div className="text-gray-900 font-medium">{comp.name}</div>
                 </div>

@@ -27,6 +27,8 @@ export default function ReservationSummary({
       case 'day': return '24 hodin'
       case '24h': return '24 hodin'
       case '48h': return '48 hodin'
+      case '72h': return '72 hodin'
+      case '96h': return '96 hodin'
       default: return ''
     }
   }

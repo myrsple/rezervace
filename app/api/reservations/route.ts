@@ -111,6 +111,14 @@ export async function POST(request: NextRequest) {
         startDateTime.setHours(12, 0, 0, 0) // 12:00 PM
         endDate = addHours(startDateTime, 48)
         break
+      case '72h':
+        startDateTime.setHours(12,0,0,0)
+        endDate = addHours(startDateTime,72)
+        break
+      case '96h':
+        startDateTime.setHours(12,0,0,0)
+        endDate = addHours(startDateTime,96)
+        break
       default:
         return NextResponse.json(
           { error: 'Invalid duration' },
@@ -149,10 +157,10 @@ export async function POST(request: NextRequest) {
     if (conflictingReservations.length > 0) {
       // Check if conflicts are compatible (day booking vs full day booking)
       const hasFullDayConflict = conflictingReservations.some(reservation => 
-        reservation.duration === '24h' || reservation.duration === '48h'
+        ['24h','48h','72h','96h'].includes(reservation.duration as string)
       )
       
-      if (hasFullDayConflict || (duration === '24h' || duration === '48h')) {
+      if (hasFullDayConflict || ['24h','48h','72h','96h'].includes(duration)) {
         return NextResponse.json(
           { error: 'Time slot is already booked' },
           { status: 409 }

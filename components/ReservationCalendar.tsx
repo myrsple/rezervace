@@ -226,7 +226,7 @@ export default function ReservationCalendar({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold text-semin-blue">
-          Lovné místo {spot.number}
+          {spot.name === 'Lovné místo VIP' || spot.number === 99 ? 'Lovné místo VIP 👑' : `Lovné místo ${spot.number}`}
         </h3>
         <div className="flex items-center space-x-2">
           <button 

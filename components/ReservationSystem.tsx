@@ -73,6 +73,18 @@ export default function ReservationSystem() {
   const handleSpotSelect = (spot: FishingSpot) => {
     setSelectedSpot(spot)
     setSelectedDate(null) // Reset date when spot changes
+
+    // If selected spot does not allow long stays, force duration to 'day'
+    const allowsLong = spot.name === 'Lovné místo VIP' || (spot.number && spot.number <= 6)
+    if (!allowsLong && (selectedDuration === '24h' || selectedDuration === '48h')) {
+      setSelectedDuration('day')
+    }
+
+    if (allowsLong && selectedDuration === 'day') {
+      // default to 24h if it's possible; otherwise 48h; else leave as day
+      if (isDurationPossible('24h', null)) setSelectedDuration('24h')
+      else if (isDurationPossible('48h', null)) setSelectedDuration('48h')
+    }
   }
 
   const handleDateSelect = (date: Date) => {
@@ -232,42 +244,56 @@ export default function ReservationSystem() {
           {/* Duration Selection */}
           <div className="mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <button
-                  type="button"
-                  onClick={() => setSelectedDuration('day')}
-                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${!isDayPossible()? 'opacity-40 cursor-not-allowed border-gray-200': selectedDuration === 'day' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
-                  disabled={!isDayPossible()}
-                >
-                  <div className={`font-bold text-lg ${selectedDuration === 'day' ? 'text-semin-blue' : 'text-semin-gray'}`}>
-                    Jeden den
-                  </div>
-                  <div className={`text-sm ${selectedDuration === 'day' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>
-                    8:00 - 22:00
-                  </div>
-                  <div className="text-2xl font-bold text-semin-green">200,-</div>
-                </button>
+                              {(() => {
+                                const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : false
+                                const unavailable = allowsLong || !isDayPossible()
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => !unavailable && setSelectedDuration('day')}
+                                    className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === 'day' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                                    disabled={unavailable}
+                                  >
+                                    <div className={`font-bold text-lg ${selectedDuration === 'day' ? 'text-semin-blue' : 'text-semin-gray'}`}>Denní</div>
+                                    <div className={`text-sm ${selectedDuration === 'day' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>8:00 - 22:00</div>
+                                    <div className="text-2xl font-bold text-semin-green">200,-</div>
+                                  </button>
+                                )
+                              })()}
                 
-                <button
-                  type="button"
-                  onClick={() => isDurationPossible('24h') && setSelectedDuration('24h')}
-                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${!isDurationPossible('24h') ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '24h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
-                  disabled={!isDurationPossible('24h')}
-                >
-                  <div className={`font-bold text-lg ${selectedDuration === '24h' ? 'text-semin-blue' : 'text-semin-gray'}`}>24 hodin</div>
-                  <div className={`text-sm ${selectedDuration === '24h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Poledne</div>
-                  <div className="text-2xl font-bold text-semin-green">350,-</div>
-                </button>
+                {(() => {
+                  const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : true
+                  const unavailable = !allowsLong || !isDurationPossible('24h')
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => !unavailable && setSelectedDuration('24h')}
+                      className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '24h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                      disabled={unavailable}
+                    >
+                      <div className={`font-bold text-lg ${selectedDuration === '24h' ? 'text-semin-blue' : 'text-semin-gray'}`}>24 hodin</div>
+                      <div className={`text-sm ${selectedDuration === '24h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Poledne</div>
+                      <div className="text-2xl font-bold text-semin-green">350,-</div>
+                    </button>
+                  )
+                })()}
 
-                <button
-                  type="button"
-                  onClick={() => isDurationPossible('48h') && setSelectedDuration('48h')}
-                  className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${!isDurationPossible('48h') ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '48h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
-                  disabled={!isDurationPossible('48h')}
-                >
-                  <div className={`font-bold text-lg ${selectedDuration === '48h' ? 'text-semin-blue' : 'text-semin-gray'}`}>48 hodin</div>
-                  <div className={`text-sm ${selectedDuration === '48h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Den – Poledne</div>
-                  <div className="text-2xl font-bold text-semin-green">600,-</div>
-                </button>
+                {(() => {
+                  const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : true
+                  const unavailable = !allowsLong || !isDurationPossible('48h')
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => !unavailable && setSelectedDuration('48h')}
+                      className={`p-6 border-2 rounded-2xl text-center transition-all duration-200 ${unavailable ? 'opacity-40 cursor-not-allowed border-gray-200' : selectedDuration === '48h' ? 'border-semin-blue bg-semin-light-blue shadow-card' : 'border-gray-200 hover:border-semin-blue hover:shadow-card'}`}
+                      disabled={unavailable}
+                    >
+                      <div className={`font-bold text-lg ${selectedDuration === '48h' ? 'text-semin-blue' : 'text-semin-gray'}`}>48 hodin</div>
+                      <div className={`text-sm ${selectedDuration === '48h' ? 'text-semin-blue/70' : 'text-semin-gray/70'}`}>Poledne – Den – Poledne</div>
+                      <div className="text-2xl font-bold text-semin-green">600,-</div>
+                    </button>
+                  )
+                })()}
             </div>
           </div>
 

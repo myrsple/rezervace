@@ -226,14 +226,11 @@ export default function ReservationSystem() {
           )}
           
           <h2 className="text-3xl font-bold text-semin-blue mb-6">
-            Teď si vyberte datum 🗓️
+            Teď délku rezervace a termín 🗓️
           </h2>
           
           {/* Duration Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Délka rezervace
-            </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <button
                   type="button"
@@ -313,11 +310,11 @@ export default function ReservationSystem() {
       )}
 
       {selectedDuration === 'day' && selectedDate && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mt-8">
-          <h2 className="text-xl font-bold text-yellow-800 mb-2">Rezervace na jeden den</h2>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 mt-8">
+          <h2 className="text-xl font-bold text-yellow-800 mb-2">Denní rezervace</h2>
           <p className="text-yellow-700 text-sm">
-            Pro rezervaci celého dne nás prosím kontaktujte telefonicky na&nbsp;
-            <a href="tel:+420123456789" className="font-medium underline">+420&nbsp;123&nbsp;456&nbsp;789</a>.
+            Pro ověření nám prosím zavolejte na&nbsp;
+            <a href="tel:+420773291941" className="font-medium no-underline">+420&nbsp;773&nbsp;291&nbsp;941</a>.
           </p>
         </div>
       )}

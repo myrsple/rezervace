@@ -377,18 +377,18 @@ export default function ReservationCalendar({
               return (
                 <button
                   key={date.toISOString()}
-                  className={getDayClasses(date, isSelected, false, isCurrentMonth, 'competition') + ' font-semibold cursor-not-allowed'}
+                  className={getDayClasses(date, isSelected, false, isCurrentMonth, 'competition') + ' font-semibold cursor-not-allowed focus:outline-none'}
                   disabled
                   style={{ minHeight: 48, position: 'relative', overflow: 'hidden' }}
                 >
                   <div className="flex items-center h-7 ml-[5px]">
                     {isTodayDate ? (
-                      <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow" style={{marginLeft:'-6px'}}>
-                        {format(date, 'd')}
+                      <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow" style={{marginLeft:'-4px'}}>
+                        {format(date, 'd.')}
                       </span>
                     ) : (
                       <span className="text-base font-semibold text-left">
-                        {format(date, 'd')}
+                        {format(date, 'd.')}
                       </span>
                     )}
                   </div>
@@ -406,7 +406,7 @@ export default function ReservationCalendar({
                   if (!canSelect || !isCurrentMonth) return;
                   onDateSelect(date);
                 }}
-                className={cellClasses + ' hover:z-20 focus:z-20'}
+                className={cellClasses + ' hover:z-40 focus:z-40 focus:outline-none'}
                 disabled={!canSelect || !isCurrentMonth}
                 style={{ minHeight: 48, position: 'relative', overflow: 'visible', zIndex: isSelected ? 30 : undefined }}
               >
@@ -421,12 +421,12 @@ export default function ReservationCalendar({
 
                 <div className="flex items-center h-7 ml-[5px] relative z-10">
                   {isTodayDate ? (
-                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow" style={{marginLeft:'-6px'}}>
-                      {format(date, 'd')}
+                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-semin-blue text-white font-bold text-base shadow" style={{marginLeft:'-4px'}}>
+                      {format(date, 'd.')}
                     </span>
                   ) : (
                     <span className="text-base font-semibold text-left">
-                      {format(date, 'd')}
+                      {format(date, 'd.')}
                     </span>
                   )}
                 </div>
@@ -451,25 +451,25 @@ export default function ReservationCalendar({
       </div>
 
       {competitions.length > 0 && (
-        <div className="mt-6 bg-blue-50 border border-blue-100 rounded-2xl p-6">
-          <h4 className="text-lg font-semibold text-blue-900 mb-2">Nadcházející závody</h4>
+        <div className="mt-6 bg-purple-50 border border-purple-200 rounded-2xl p-6">
+          <h4 className="text-lg font-bold text-purple-900 mb-2">Nadcházející závody</h4>
           <div className="space-y-2">
             {competitions
               .filter(comp => new Date(comp.date) >= startOfDay(new Date()))
               .map(comp => (
                 <div key={comp.id} className="flex items-center space-x-3 text-sm">
-                  <div className="w-24 text-blue-800 font-medium">
-                    {format(new Date(comp.date), 'dd.MM.yyyy')}
+                  <div className="w-24 text-gray-700 font-medium">
+                    {format(new Date(comp.date), 'dd. MM. yyyy')}
                   </div>
                   <div className="text-gray-900 font-medium">{comp.name}</div>
                 </div>
               ))}
             <div className="pt-4">
-              <span className="text-sm text-blue-900">V tyto dny není možné rezervovat lovné místo, ale můžete se </span>
-              <a href="#competitions" className="text-sm font-medium text-purple-600 hover:text-purple-700 underline">
+              <span className="text-sm text-purple-900">V tyto dny není možné rezervovat lovné místo, ale můžete se </span>
+              <a href="#competitions" className="text-sm font-medium text-purple-600 hover:text-purple-700 no-underline">
                 přihlásit do závodu
               </a>
-              <span className="text-sm text-blue-900">.</span>
+              <span className="text-sm text-purple-900">.</span>
             </div>
           </div>
         </div>

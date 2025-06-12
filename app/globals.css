@@ -27,4 +27,27 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Slide-in animation for mobile drawer */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0%);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.25s ease-out forwards;
+}
+
+/* Mobile optimisations for admin tables */
+@media (max-width: 640px) {
+  table.admin-table td,
+  table.admin-table th {
+    padding-top: 0.5rem; /* py-2 */
+    padding-bottom: 0.5rem;
+  }
 } 

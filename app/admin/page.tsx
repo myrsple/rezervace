@@ -374,6 +374,7 @@ export default function AdminDashboard() {
   }
 
   const updateReservationPaidStatus = async (reservationId: string, isPaid: boolean) => {
+    const currentScroll = window.scrollY
     try {
       const response = await fetch(`/api/reservations/${reservationId}`, {
         method: 'PATCH',
@@ -384,7 +385,8 @@ export default function AdminDashboard() {
       })
 
       if (response.ok) {
-        fetchData() // Refresh data
+        await fetchData() // Refresh data
+        window.scrollTo({ top: currentScroll })
       }
     } catch (error) {
       console.error('Error updating payment status:', error)
@@ -393,6 +395,7 @@ export default function AdminDashboard() {
 
   const updateCompetitionPaidStatus = async (registrationId: string, isPaid: boolean) => {
     showFeedback('success', 'Ukládám změnu platby...')
+    const currentScroll = window.scrollY
     try {
       const response = await fetch(`/api/competition-registrations/${registrationId}`, {
         method: 'PATCH',
@@ -404,6 +407,7 @@ export default function AdminDashboard() {
 
       if (response.ok) {
         await fetchData() // Refresh data
+        window.scrollTo({ top: currentScroll })
         showFeedback('success', 'Stav platby byl úspěšně změněn')
       } else {
         const error = await response.json()
@@ -697,7 +701,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-gray-200 admin-table">
                 <thead className="bg-gray-50">
                   <tr>
                     {/* Rybář */}
@@ -857,7 +861,7 @@ export default function AdminDashboard() {
                           type="checkbox"
                           checked={reservation.isPaid}
                           onChange={(e) => updateReservationPaidStatus(reservation.id, e.target.checked)}
-                          className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                          className="w-6 h-6 sm:w-4 sm:h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -1038,9 +1042,9 @@ export default function AdminDashboard() {
                 <div className="space-y-6">
                   {getActiveCompetitions().map((competition) => (
                     <div key={competition.id} className={`border border-gray-200 rounded-lg p-6 ${!competition.isActive ? 'bg-gray-50' : ''}`}>
-                      <div className="flex justify-between items-start mb-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between items-start mb-4 space-y-3 sm:space-y-0">
                         <div>
-                          <h4 className="text-lg font-semibold text-gray-900">{competition.name}</h4>
+                          <h4 className="text-lg font-semibold text-gray-900 truncate max-w-full">{competition.name}</h4>
                           <div className="text-sm text-gray-600 mt-1">
                             <div>
                               Datum: {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}
@@ -1052,39 +1056,57 @@ export default function AdminDashboard() {
                             <div>Vstupné: {competition.entryFee} Kč</div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-4">
+                          {/* Edit icon */}
                           <button
                             onClick={() => openEditCompetition(competition)}
                             disabled={operationLoading.update || operationLoading.toggle.has(competition.id)}
-                            className="text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2 rounded hover:bg-gray-100 text-blue-600 disabled:opacity-50" 
+                            title="Upravit"
+                            aria-label="Upravit"
                           >
-                            Upravit
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 3.487a2.007 2.007 0 112.83 2.83L9.06 16.95l-3.89 1.06a.75.75 0 01-.92-.92l1.06-3.89 10.612-10.61z" />
+                            </svg>
                           </button>
-                          <button
-                            onClick={() => toggleCompetitionStatus(competition.id, !competition.isActive)}
-                            disabled={operationLoading.toggle.has(competition.id)}
-                            className={`${
-                              competition.isActive ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'
-                            } disabled:opacity-50 disabled:cursor-not-allowed flex items-center`}
-                          >
-                            {operationLoading.toggle.has(competition.id) ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+
+                          {/* Active toggle */}
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-600 select-none">{competition.isActive ? 'Aktivní' : 'Neaktivní'}</span>
+                            <button
+                              onClick={() => toggleCompetitionStatus(competition.id, !competition.isActive)}
+                              disabled={operationLoading.toggle.has(competition.id)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-semin-blue ${
+                                competition.isActive ? 'bg-semin-blue' : 'bg-gray-200'
+                              } disabled:opacity-50`}
+                              aria-label="Přepnout aktivitu závodu"
+                            >
+                              {operationLoading.toggle.has(competition.id) ? (
+                                <svg className="absolute inset-0 m-auto h-4 w-4 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                 </svg>
-                                {competition.isActive ? 'Deaktivuji...' : 'Aktivuji...'}
-                              </>
-                            ) : (
-                              competition.isActive ? 'Deaktivovat' : 'Aktivovat'
-                            )}
-                          </button>
+                              ) : (
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                                    competition.isActive ? 'translate-x-6' : 'translate-x-1'
+                                  }`}
+                                />
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Delete icon */}
                           <button
                             onClick={() => openDeleteCompetitionConfirmation(competition.id, competition.name)}
                             disabled={operationLoading.delete || operationLoading.toggle.has(competition.id)}
-                            className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2 rounded hover:bg-gray-100 text-red-600 disabled:opacity-50" 
+                            title="Smazat"
+                            aria-label="Smazat"
                           >
-                            Smazat
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-7-4V3a2 2 0 00-2-2h-4a2 2 0 00-2 2v4" />
+                            </svg>
                           </button>
                         </div>
                       </div>
@@ -1119,7 +1141,7 @@ export default function AdminDashboard() {
                             </button>
                           </div>
                           <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
+                            <table className="min-w-full divide-y divide-gray-200 admin-table">
                               <thead className="bg-gray-50">
                                 <tr>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
@@ -1222,7 +1244,7 @@ export default function AdminDashboard() {
                                         type="checkbox"
                                         checked={registration.isPaid}
                                         onChange={(e) => updateCompetitionPaidStatus(registration.id, e.target.checked)}
-                                        className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                                        className="w-6 h-6 sm:w-4 sm:h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                                       />
                                     </td>
                                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
@@ -1268,9 +1290,9 @@ export default function AdminDashboard() {
                 <div className="space-y-6">
                   {getCompletedCompetitions().map((competition) => (
                     <div key={competition.id} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
-                      <div className="flex justify-between items-start mb-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between items-start mb-4 space-y-3 sm:space-y-0">
                         <div>
-                          <h4 className="text-lg font-semibold text-gray-700">{competition.name}</h4>
+                          <h4 className="text-lg font-semibold text-gray-700 truncate max-w-full">{competition.name}</h4>
                           <div className="text-sm text-gray-500 mt-1">
                             <div>
                               Datum: {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}
@@ -1282,7 +1304,7 @@ export default function AdminDashboard() {
                             <div>Vstupné: {competition.entryFee} Kč</div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-1 sm:space-y-0 text-right sm:text-left">
                           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
                             Dokončen
                           </span>
@@ -1303,7 +1325,7 @@ export default function AdminDashboard() {
                         <div className="border-t pt-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-3">Finální výsledky</h5>
                           <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
+                            <table className="min-w-full divide-y divide-gray-200 admin-table">
                               <thead className="bg-gray-100">
                                 <tr>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
@@ -1406,7 +1428,7 @@ export default function AdminDashboard() {
                                         type="checkbox"
                                         checked={registration.isPaid}
                                         onChange={(e) => updateCompetitionPaidStatus(registration.id, e.target.checked)}
-                                        className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                                        className="w-6 h-6 sm:w-4 sm:h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                                       />
                                     </td>
                                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">

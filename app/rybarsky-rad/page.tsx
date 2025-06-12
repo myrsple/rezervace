@@ -20,9 +20,9 @@ export default function FishingRulesPage() {
           <h1 className="text-4xl font-bold text-blue-700 mb-6">Rybářský řád</h1>
 
           <p>
-            Abychom si všichni užili lov i&nbsp;pobyt u vody, platí na&nbsp;Tomáškovi několik jasných
-            pravidel. Vycházejí z&nbsp;celostátní legislativy&nbsp;(zákon&nbsp;99/2004&nbsp;Sb. a
-            vyhláška&nbsp;197/2004&nbsp;Sb.), ale současně zohledňují specifika našeho soukromého
+            Abychom si všichni užili lov i pobyt u vody, platí na Tomáškovi několik jasných
+            pravidel. Vycházejí z celostátní legislativy (zákon 99/2004 Sb. a
+            vyhláška 197/2004 Sb.), ale současně zohledňují specifika našeho soukromého
             revíru chyť a pusť.
           </p>
 

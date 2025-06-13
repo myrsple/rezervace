@@ -3,16 +3,23 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import AdminLoginModal from './AdminLoginModal'
 
 export default function Navigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const [showLogin, setShowLogin] = useState(false)
+  const [isAuth, setIsAuth] = useState(false)
+
+  useEffect(() => {
+    setIsAuth(document.cookie.includes('adminAuth=1'))
+  }, [pathname, showLogin])
 
   const links = [
     { href: '/o-nas', label: 'O nás' },
+    { href: '/galerie', label: 'Galerie' },
     { href: '/rybarsky-rad', label: 'Rybářský řád' },
     { href: '/cenik-sluzeb', label: 'Ceník služeb' },
-    { href: '/galerie', label: 'Galerie' },
     { href: '/admin', label: 'Administrace' },
   ]
 
@@ -32,38 +39,41 @@ export default function Navigation() {
           })()}
 
           {/* Desktop links */}
-          <div className="hidden lg:flex space-x-4">
-            {[{ href: '/', label: 'Rezervovat' }, ...links.filter(l => l.href !== '/admin')].map(({ href, label }) => {
+          <div className="hidden lg:flex items-center w-full">
+            {/* Rezervovat left */}
+            {(() => {
+              const href = '/'
+              const label = 'Rezervovat'
               const isActive = pathname === href
-              const commonBase = 'px-4 py-2 rounded-xl text-base font-medium '
-              const commonFast = `${commonBase} transition-all duration-200`
-              let className: string
-              if (isActive) {
-                className = `${commonFast} bg-semin-blue text-white shadow-card`
-              } else if (href === '/') {
-                className = `${commonFast} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
-              } else {
-                className = `${commonFast} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
-              }
-              return (
-                <Link key={href} href={href} className={className}>
-                  {label}
-                </Link>
-              )
-            })}
+              const base = 'px-4 py-2 rounded-xl text-base font-medium transition-all duration-200'
+              const className = isActive ? `${base} bg-semin-blue text-white shadow-card` : `${base} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
+              return <Link href={href} className={className}>{label}</Link>
+            })()}
+
+            {/* other links right */}
+            <div className="ml-auto flex space-x-4">
+              {links.filter(l => !['/admin','/'].includes(l.href)).map(({ href, label }) => {
+                const isActive = pathname === href
+                const base = 'px-4 py-2 rounded-xl text-base font-medium transition-all duration-200'
+                const className = isActive ? `${base} bg-semin-blue text-white shadow-card` : `${base} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
+                return <Link key={href} href={href} className={className}>{label}</Link>
+              })}
+            </div>
           </div>
 
           {/* Admin link on desktop */}
-          <Link
-            href="/admin"
-            className={`hidden lg:block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 ml-auto ${
-              pathname === '/admin'
-                ? 'bg-semin-blue text-white shadow-card'
-                : 'text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue'
-            }`}
-          >
-            Administrace
-          </Link>
+          {isAuth && (
+            <Link
+              href="/admin"
+              className={`hidden lg:block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 ml-auto ${
+                pathname === '/admin'
+                  ? 'bg-semin-blue text-white shadow-card'
+                  : 'text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue'
+              }`}
+            >
+              Administrace
+            </Link>
+          )}
 
           {/* Hamburger for mobile */}
           <button
@@ -84,22 +94,30 @@ export default function Navigation() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 top-0 mt-4 mr-2 w-60 bg-white shadow-lg p-4 flex flex-col space-y-3 animate-slide-in rounded-2xl max-h-[90vh] overflow-y-auto">
             {links.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setIsOpen(false)}
-                className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 ${
-                  pathname === href
-                    ? 'bg-semin-blue text-white shadow-card'
-                    : 'text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue'
-                }`}
-              >
-                {label}
-              </Link>
+              href === '/admin' ? (
+                isAuth && (
+                  <Link key={href} href={href} onClick={()=>setIsOpen(false)} className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 ${ pathname === href? 'bg-semin-blue text-white shadow-card':'text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue'}`}>Administrace</Link>
+                )
+              ) : (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setIsOpen(false)}
+                  className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 ${
+                    pathname === href
+                      ? 'bg-semin-blue text-white shadow-card'
+                      : 'text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue'
+                  }`}
+                >
+                  {label}
+                </Link>
+              )
             ))}
           </div>
         </div>
       )}
+
+      {showLogin && <AdminLoginModal onClose={()=>setShowLogin(false)} />}
     </nav>
   )
 }

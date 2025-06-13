@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Reservation, FishingSpot, Competition, CompetitionRegistration } from '@/types'
 import { format, addHours } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import { getGearNames } from '@/lib/gear-config'
 
 export default function AdminDashboard() {
+  const router = useRouter()
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [fishingSpots, setFishingSpots] = useState<FishingSpot[]>([])
   const [competitions, setCompetitions] = useState<Competition[]>([])
@@ -42,6 +44,8 @@ export default function AdminDashboard() {
     registrationId: '',
     customerName: ''
   })
+
+  // no client auth guard; server middleware handles
 
   useEffect(() => {
     let isMounted = true;
@@ -636,6 +640,12 @@ export default function AdminDashboard() {
     setDeleteRegistrationConfirmation({ isOpen: true, registrationId, customerName })
   }
 
+  const handleLogout = () => {
+    // clear cookie
+    document.cookie = 'adminAuth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    router.push('/')
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -647,8 +657,17 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Administrace lovných míst</h1>
+        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-gray-900">Správa rezervací, lovných míst a závodů</h1>
+          <button
+            onClick={handleLogout}
+            className="flex items-center space-x-2 px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+            </svg>
+            <span>Odhlásit</span>
+          </button>
         </div>
       </div>
 
@@ -969,44 +988,64 @@ export default function AdminDashboard() {
             <div className="bg-white rounded-xl shadow-soft p-6">
               <h3 className="text-xl font-bold text-semin-blue mb-4">Vytvořit nový závod</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <input
-                  type="text"
-                  placeholder="Název závodu"
-                  value={newCompetition.name}
-                  onChange={(e) => setNewCompetition({ ...newCompetition, name: e.target.value })}
-                  className="px-4 py-2 border-2 border-gray-200 rounded-lg"
-                  disabled={operationLoading.create}
-                />
-                <input
-                  type="datetime-local"
-                  value={newCompetition.date}
-                  onChange={(e) => setNewCompetition({ ...newCompetition, date: e.target.value })}
-                  className="px-4 py-2 border-2 border-gray-200 rounded-lg"
-                  disabled={operationLoading.create}
-                />
-                <input
-                  type="datetime-local"
-                  value={newCompetition.endDate}
-                  onChange={(e) => setNewCompetition({ ...newCompetition, endDate: e.target.value })}
-                  className="px-4 py-2 border-2 border-gray-200 rounded-lg"
-                  disabled={operationLoading.create}
-                />
-                <input
-                  type="number"
-                  placeholder="Kapacita"
-                  value={newCompetition.capacity}
-                  onChange={(e) => setNewCompetition({ ...newCompetition, capacity: e.target.value })}
-                  className="px-4 py-2 border-2 border-gray-200 rounded-lg"
-                  disabled={operationLoading.create}
-                />
-                <input
-                  type="number"
-                  placeholder="Startovné (Kč)"
-                  value={newCompetition.entryFee}
-                  onChange={(e) => setNewCompetition({ ...newCompetition, entryFee: e.target.value })}
-                  className="px-4 py-2 border-2 border-gray-200 rounded-lg"
-                  disabled={operationLoading.create}
-                />
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-600 mb-1" htmlFor="comp-name">Název závodu</label>
+                  <input
+                    id="comp-name"
+                    type="text"
+                    placeholder="Název závodu"
+                    value={newCompetition.name}
+                    onChange={(e) => setNewCompetition({ ...newCompetition, name: e.target.value })}
+                    className="px-4 py-2 border-2 border-gray-200 rounded-lg"
+                    disabled={operationLoading.create}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-600 mb-1" htmlFor="comp-date">Datum a čas</label>
+                  <input
+                    id="comp-date"
+                    type="datetime-local"
+                    value={newCompetition.date}
+                    onChange={(e) => setNewCompetition({ ...newCompetition, date: e.target.value })}
+                    className="px-4 py-2 border-2 border-gray-200 rounded-lg"
+                    disabled={operationLoading.create}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-600 mb-1" htmlFor="comp-end">Datum a konec</label>
+                  <input
+                    id="comp-end"
+                    type="datetime-local"
+                    value={newCompetition.endDate}
+                    onChange={(e) => setNewCompetition({ ...newCompetition, endDate: e.target.value })}
+                    className="px-4 py-2 border-2 border-gray-200 rounded-lg"
+                    disabled={operationLoading.create}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-600 mb-1" htmlFor="comp-cap">Kapacita</label>
+                  <input
+                    id="comp-cap"
+                    type="number"
+                    placeholder="Kapacita"
+                    value={newCompetition.capacity}
+                    onChange={(e) => setNewCompetition({ ...newCompetition, capacity: e.target.value })}
+                    className="px-4 py-2 border-2 border-gray-200 rounded-lg"
+                    disabled={operationLoading.create}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-600 mb-1" htmlFor="comp-fee">Startovné (Kč)</label>
+                  <input
+                    id="comp-fee"
+                    type="number"
+                    placeholder="Startovné (Kč)"
+                    value={newCompetition.entryFee}
+                    onChange={(e) => setNewCompetition({ ...newCompetition, entryFee: e.target.value })}
+                    className="px-4 py-2 border-2 border-gray-200 rounded-lg"
+                    disabled={operationLoading.create}
+                  />
+                </div>
               </div>
               <button
                 onClick={createCompetition}

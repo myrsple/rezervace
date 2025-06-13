@@ -102,22 +102,23 @@ export async function POST(request: NextRequest) {
         startDateTime.setHours(6, 0, 0, 0) // 6 AM
         break
       case '24h':
-        // After June 2025 update all 24-hour reservations begin and end at noon
-        startDateTime.setHours(12, 0, 0, 0) // 12:00 PM
-        endDate = addHours(startDateTime, 24)
+        // 24-hour reservations start at noon and now finish at 10:00 next day (22 h span)
+        startDateTime.setHours(12, 0, 0, 0) // 12:00
+        endDate = addHours(startDateTime, 22) // 10:00 following day
         break
       case '48h':
-        // All 48-hour reservations also start at noon
-        startDateTime.setHours(12, 0, 0, 0) // 12:00 PM
-        endDate = addHours(startDateTime, 48)
+        // 48-hour reservations: noon start, 10:00 two days later (46 h span)
+        startDateTime.setHours(12, 0, 0, 0)
+        endDate = addHours(startDateTime, 46)
         break
       case '72h':
+        // 72-hour reservations: noon start, 10:00 three days later (70 h span)
         startDateTime.setHours(12,0,0,0)
-        endDate = addHours(startDateTime,72)
+        endDate = addHours(startDateTime,70)
         break
       case '96h':
         startDateTime.setHours(12,0,0,0)
-        endDate = addHours(startDateTime,96)
+        endDate = addHours(startDateTime,94)
         break
       default:
         return NextResponse.json(

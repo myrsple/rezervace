@@ -468,7 +468,7 @@ export default function ReservationCalendar({
                 style={{ minHeight: 48, position: 'relative', overflow: 'visible', zIndex: isSelected ? 30 : undefined }}
               >
                 {/* Split tile rendering with red half overlay */}
-                {tileType === 'split' && isCurrentMonth && (
+                {tileType === 'split' && availability !== 'past' && (
                   morningBooked ? (
                     <div className="absolute inset-y-0 left-0 w-1/2 bg-red-200 rounded-r-md" style={{opacity:1, zIndex:0}} />
                   ) : (
@@ -518,14 +518,14 @@ export default function ReservationCalendar({
                 return end >= today
               })
               .map(comp => (
-                <div key={comp.id} className="flex items-center space-x-3 text-sm">
-                  <div className="w-48 text-gray-700 font-medium">
+                <div key={comp.id} className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 text-sm">
+                  <div className="sm:w-48 text-gray-500 mb-0 sm:mb-0">
                     {format(new Date(comp.date), 'dd.MM.yyyy')}
                     {comp.endDate && (
                       <> – {format(new Date(comp.endDate), 'dd.MM.yyyy')}</>
                     )}
                   </div>
-                  <div className="text-gray-900 font-medium">{comp.name}</div>
+                  <div className="text-gray-900 font-semibold">{comp.name}</div>
                 </div>
               ))}
             <div className="pt-4">

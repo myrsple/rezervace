@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     } catch (connError) {
       console.error('Database connection error:', connError)
       return NextResponse.json(
-        { error: 'Database connection failed' },
+        { error: 'Nepodařilo se připojit k databázi' },
         { status: 503 }
       )
     }
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('Error parsing request body:', error)
       return NextResponse.json(
-        { error: 'Invalid request format' },
+        { error: 'Neplatný formát požadavku' },
         { status: 400 }
       )
     }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     if (missingFields.length > 0) {
       console.error('Missing required fields:', missingFields)
       return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(', ')}` },
+        { error: `Chybí povinná pole: ${missingFields.join(', ')}` },
         { status: 400 }
       )
     }
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     if (isNaN(startDateTime.getTime())) {
       console.error('Invalid date format:', startDate)
       return NextResponse.json(
-        { error: 'Invalid date format' },
+        { error: 'Neplatný formát data' },
         { status: 400 }
       )
     }
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
         break
       default:
         return NextResponse.json(
-          { error: 'Invalid duration' },
+          { error: 'Neplatná délka rezervace' },
           { status: 400 }
         )
     }
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       
       if (hasFullDayConflict || ['24h','48h','72h','96h'].includes(duration)) {
         return NextResponse.json(
-          { error: 'Time slot is already booked' },
+          { error: 'Tento termín je již rezervován' },
           { status: 409 }
         )
       }
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
       // Check for specific Prisma errors
       const prismaError = dbError as { code?: string }
       if (prismaError.code === 'P2002') {
-        return new NextResponse(JSON.stringify({ error: 'Duplicate reservation found' }), {
+        return new NextResponse(JSON.stringify({ error: 'Duplicitní rezervace' }), {
           status: 409,
           headers: {
             'Content-Type': 'application/json',
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
         })
       }
       if (prismaError.code === 'P2003') {
-        return new NextResponse(JSON.stringify({ error: 'Invalid fishing spot ID' }), {
+        return new NextResponse(JSON.stringify({ error: 'Neplatné ID lovného místa' }), {
           status: 400,
           headers: {
             'Content-Type': 'application/json',
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
       }
       
       return new NextResponse(JSON.stringify({ 
-        error: 'Failed to create reservation in database. Please try again.' 
+        error: 'Nepodařilo se vytvořit rezervaci v databázi. Zkuste to prosím znovu.' 
       }), {
         status: 500,
         headers: {
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
     // Enhanced general error logging
     console.error('Unexpected error creating reservation:', error)
     return new NextResponse(JSON.stringify({ 
-      error: 'An unexpected error occurred. Please try again.' 
+      error: 'Došlo k neočekávané chybě. Zkuste to prosím znovu.' 
     }), {
       status: 500,
       headers: {
@@ -259,7 +259,7 @@ export async function DELETE(request: NextRequest) {
     
     if (!reservationId) {
       return NextResponse.json(
-        { error: 'Reservation ID is required' },
+        { error: 'ID rezervace je povinné' },
         { status: 400 }
       )
     }
@@ -271,7 +271,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!existingReservation) {
       return NextResponse.json(
-        { error: 'Reservation not found' },
+        { error: 'Rezervace nebyla nalezena' },
         { status: 404 }
       )
     }
@@ -282,13 +282,13 @@ export async function DELETE(request: NextRequest) {
     })
 
     return NextResponse.json(
-      { message: 'Reservation deleted successfully' },
+      { message: 'Rezervace byla úspěšně smazána' },
       { status: 200 }
     )
   } catch (error) {
     console.error('Error deleting reservation:', error)
     return NextResponse.json(
-      { error: 'Failed to delete reservation' },
+      { error: 'Nepodařilo se smazat rezervaci' },
       { status: 500 }
     )
   }

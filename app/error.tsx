@@ -27,25 +27,25 @@ export default function Error({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Brave Browser Notice</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Upozornění pro Brave</h2>
           <p className="text-gray-600 mb-4">
-            Looks like you're using Brave! Some browser features might show harmless errors, but everything is working fine.
+            Vypadá to, že používáš Brave! Některé funkce prohlížeče mohou ukazovat bezpečné chyby, ale vše funguje dobře.
           </p>
           <p className="text-sm text-gray-500 mb-6">
-            If you want to hide these errors, you can temporarily disable Brave Shields for this site.
+            Pokud chceš tyto chyby skrýt, můžeš dočasně zakázat Brave Shieldy pro tuto stránku.
           </p>
           <div className="space-x-4">
             <button
               onClick={() => reset()}
               className="bg-semin-blue text-white px-4 py-2 rounded-lg hover:bg-semin-blue/90 transition-colors"
             >
-              Try again
+              Zkusit znovu
             </button>
             <button
               onClick={() => window.location.href = '/'}
               className="text-semin-blue hover:text-semin-blue/90 transition-colors"
             >
-              Go home
+              Zpět na úvod
             </button>
           </div>
         </div>
@@ -61,22 +61,22 @@ export default function Error({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong!</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Něco se pokazilo!</h2>
         <p className="text-gray-600 mb-6">
-          We've encountered an unexpected error. Please try again or contact support if the problem persists.
+          Vyskytla se neočekávaná chyba. Prosím, zkuste to znovu nebo kontaktujte podporu, pokud problém přetrvává.
         </p>
         <div className="space-x-4">
           <button
             onClick={() => reset()}
             className="bg-semin-blue text-white px-4 py-2 rounded-lg hover:bg-semin-blue/90 transition-colors"
           >
-            Try again
+            Zkusit znovu
           </button>
           <button
             onClick={() => window.location.href = '/'}
             className="text-semin-blue hover:text-semin-blue/90 transition-colors"
           >
-            Go home
+            Zpět na úvod
           </button>
         </div>
       </div>

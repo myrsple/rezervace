@@ -2,46 +2,32 @@ import { GearItem } from '@/types'
 
 export const GEAR_ITEMS: GearItem[] = [
   {
-    id: 'rod_reel',
-    name: 'Prut + naviják',
-    description: 'Kompletní sada: teleskopický prut 3,5m + špička + naviják',
-    price: 200,
+    id: 'prut',
+    name: 'Prut',
+    description: 'Kvalitní rybářský prut včetně navijáku',
+    price: 100,
     emoji: '🎣'
   },
   {
-    id: 'tackle_box',
-    name: 'Drobné náčiní',
-    description: 'Plná krabička: háčky, olova, splávky, vlasce, nástrahy',
-    price: 150,
-    emoji: '🗃️'
-  },
-  {
-    id: 'chair',
-    name: 'Rybářská židle',
-    description: 'Pohodlná skládací židle s operadlem a držákem na prut',
-    price: 100,
-    emoji: '🪑'
-  },
-  {
-    id: 'net',
+    id: 'podberak',
     name: 'Podběrák',
-    description: 'Velký podběrák s teleskopickou rukojetí, ideální pro větší ryby',
-    price: 80,
+    description: 'Velký podběrák pro bezpečné podebrání úlovku',
+    price: 50,
     emoji: '🥅'
   },
   {
-    id: 'rum_flask',
-    name: 'Flaška rumu',
-    description: 'Kvalitní český rum pro zahřátí během dlouhého rybaření',
-    price: 100,
-    emoji: '🥃'
+    id: 'podlozka',
+    name: 'Podložka',
+    description: 'Měkká podložka pro šetrné položení ryby',
+    price: 50,
+    emoji: '🛏️'
   },
   {
-    id: 'bait',
-    name: 'Návnada',
-    description: 'Čerstvá návnada - žížaly, kukuřice, peletky (denní dávka)',
-    price: 80,
-    emoji: '🪱'
+    id: 'vazici_sak',
+    name: 'Vážící sak',
+    description: 'Sak pro bezpečné zvážení a přechování ryby',
+    price: 50,
+    emoji: '🧺'
   }
 ]
 

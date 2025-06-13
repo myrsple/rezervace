@@ -5,6 +5,7 @@ import { FishingSpot } from '@/types'
 import { format } from 'date-fns'
 import { GEAR_ITEMS, getGearTotalPrice } from '@/lib/gear-config'
 import { generateCzechPaymentQR, DEFAULT_BANK_ACCOUNT } from '@/lib/qr-payment'
+import ReservationSummary from './ReservationSummary'
 
 interface BookingFormProps {
   spot: FishingSpot
@@ -68,10 +69,14 @@ export default function BookingForm({
         bankCode: DEFAULT_BANK_ACCOUNT.bankCode,
         amount: totalPrice,
         variableSymbol: reservationData.variableSymbol,
-        message: `Lovné místo ${spot.number}`
+        message: (()=>{
+          const dateStr = format(date,'d.M.')
+          const equip = selectedGear.length>0 ? ' + Vybaveni' : ''
+          return `Rezervace LM ${spot.number} ${dateStr}${equip}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        })()
       }).then(setQrCodeUrl).catch(console.error)
     }
-  }, [reservationData, totalPrice, spot.number])
+  }, [reservationData, totalPrice, spot.number, date, selectedGear])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -166,110 +171,121 @@ export default function BookingForm({
   if (success) {
     return (
       <div>
+        {/* Success header */}
         <div className="flex flex-col items-center mb-6">
           <div className="w-12 h-12 bg-semin-green/10 rounded-xl flex items-center justify-center mb-3">
             <svg className="w-6 h-6 text-semin-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <div className="text-center">
-            <h3 className="text-xl font-bold text-semin-green">Rezervace potvrzena!</h3>
-            <p className="text-semin-gray">Brzy obdržíte potvrzovací e-mail.</p>
-          </div>
+          <h3 className="text-xl font-bold text-semin-green mb-2">Rezervace potvrzena!</h3>
+          <p className="text-semin-gray mb-4">Brzy obdržíte potvrzovací e-mail.</p>
         </div>
 
-        <div className="space-y-6">
-          {/* Reservation Details */}
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <div className="text-sm text-blue-800 font-medium mb-1">Kontaktní údaje</div>
-                  <div className="text-sm space-y-1">
-                    <p className="text-gray-900">{formData.customerName}</p>
-                    <p className="text-gray-600">{formData.customerEmail}</p>
-                    <p className="text-gray-600">{formData.customerPhone}</p>
-                  </div>
-                </div>
+        {/* Blue detail section */}
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 space-y-6">
+          <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:grid-rows-2 md:gap-6">
+            {/* Row 1 / Col 1 – Shrnutí */}
+            <div className="md:row-start-1 md:col-start-1">
+              <ReservationSummary 
+                spot={spot} 
+                date={date} 
+                duration={duration} 
+                timeSlot={timeSlot} 
+              />
+            </div>
 
-                {selectedGear.length > 0 && (
-                  <div>
-                    <div className="text-sm text-blue-800 font-medium mb-1">Půjčené vybavení</div>
-                    <div className="text-sm space-y-1">
-                      {selectedGear.map(gearId => {
-                        const gearItem = GEAR_ITEMS.find(item => item.id === gearId)
-                        return gearItem && (
-                          <div key={gearId} className="flex justify-between">
-                            <span className="text-gray-900">{gearItem.name}</span>
-                            <span className="text-gray-600">{gearItem.price},-</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
+            {/* Row 1 / Col 2 – Kontaktní + Vybavení */}
+            <div className="space-y-4 md:row-start-1 md:col-start-2">
+              <div>
+                <div className="text-sm text-blue-800 font-medium mb-1">Kontaktní údaje</div>
+                <div className="text-sm space-y-1">
+                  <p className="text-gray-900">{formData.customerName}</p>
+                  <p className="text-gray-600">{formData.customerEmail}</p>
+                  <p className="text-gray-600">{formData.customerPhone}</p>
+                </div>
               </div>
 
-              <div className="space-y-4">
+              {selectedGear.length > 0 && (
                 <div>
-                  <div className="text-sm text-blue-800 font-medium mb-1">Platební údaje</div>
+                  <div className="text-sm text-blue-800 font-medium mb-1">Půjčené vybavení</div>
                   <div className="text-sm space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Číslo účtu:</span>
-                      <span className="text-gray-900 font-mono">{DEFAULT_BANK_ACCOUNT.accountNumber}/{DEFAULT_BANK_ACCOUNT.bankCode}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Variabilní symbol:</span>
-                      <span className="text-gray-900 font-mono">{reservationData?.variableSymbol}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Místo:</span>
-                      <span className="text-gray-900">{basePrice},-</span>
-                    </div>
-                    {gearPrice > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Vybavení:</span>
-                        <span className="text-gray-900">{gearPrice},-</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between pt-2 border-t">
-                      <span className="font-medium text-gray-900">Celkem:</span>
-                      <span className="font-medium text-gray-900">{totalPrice},-</span>
-                    </div>
+                    {selectedGear.map(gearId => {
+                      const gearItem = GEAR_ITEMS.find(item => item.id === gearId)
+                      return gearItem && (
+                        <div key={gearId} className="flex justify-between">
+                          <span className="text-gray-900">{gearItem.name}</span>
+                          <span className="text-gray-600">{gearItem.price},-</span>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
+              )}
+            </div>
 
-                {qrCodeUrl && (
-                  <div className="flex justify-center">
-                    <img 
-                      src={qrCodeUrl} 
-                      alt="QR kód pro platbu" 
-                      className="w-32 h-32 rounded-lg"
-                    />
+            {/* Row 2 / Col 1 – Platební údaje */}
+            <div className="space-y-4 md:row-start-2 md:col-start-1">
+              <div>
+                <div className="text-sm text-blue-800 font-medium mb-1">Platební údaje</div>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Číslo účtu:</span>
+                    <span className="text-gray-900 font-mono">{DEFAULT_BANK_ACCOUNT.accountNumber}/{DEFAULT_BANK_ACCOUNT.bankCode}</span>
                   </div>
-                )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Variabilní symbol:</span>
+                    <span className="text-gray-900 font-mono">{reservationData?.variableSymbol}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Místo:</span>
+                    <span className="text-gray-900">{basePrice},-</span>
+                  </div>
+                  {gearPrice > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Vybavení:</span>
+                      <span className="text-gray-900">{gearPrice},-</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="font-medium text-gray-900">Celkem:</span>
+                    <span className="font-medium text-gray-900">{totalPrice},-</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <button
-            onClick={() => {
-              setSuccess(false)
-              setReservationData(null)
-              setQrCodeUrl('')
-              setFormData({
-                customerName: '',
-                customerEmail: '',
-                customerPhone: ''
-              })
-              setSelectedGear([])
-              onComplete()
-            }}
-            className="w-full bg-semin-blue text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-card hover:bg-semin-blue/90 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-semin-blue/30 transition-all duration-200"
-          >
-            Vytvořit novou rezervaci
-          </button>
+            {/* Row 2 / Col 2 – QR kód */}
+            {qrCodeUrl && (
+              <div className="md:row-start-2 md:col-start-2 flex justify-start self-end">
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR kód pro platbu" 
+                  className="w-32 h-32 rounded-lg"
+                />
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Primary action button positioned under the blue section, still inside white container */}
+        <button
+          onClick={() => {
+            setSuccess(false)
+            setReservationData(null)
+            setQrCodeUrl('')
+            setFormData({
+              customerName: '',
+              customerEmail: '',
+              customerPhone: ''
+            })
+            setSelectedGear([])
+            onComplete()
+          }}
+          className="mt-6 w-full bg-semin-blue text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-card hover:bg-semin-blue/90 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-semin-blue/30 transition-all duration-200"
+        >
+          Vytvořit novou rezervaci
+        </button>
       </div>
     )
   }
@@ -333,7 +349,7 @@ export default function BookingForm({
       <div className="space-y-4">
         <h4 className="text-xl font-bold text-semin-blue mb-4">Potřebujete vybavení?</h4>
         <p className="text-sm text-semin-gray mb-4">
-          Pokud vám něco chybí, můžete si u nás půjčit nebo dokoupit vše potřebné.
+          Pokud vám něco chybí, na místě vám můžeme zapůjčit následující vybavení.
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

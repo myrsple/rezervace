@@ -106,6 +106,12 @@ export default function CompetitionSection() {
           const isFull = isCompetitionFull(competition)
           const registrationCount = competition.registrations?.length || 0
           
+          const startDateObj = new Date(competition.date)
+          const endDateObj = competition.endDate ? new Date(competition.endDate) : null
+          const sameMonth = endDateObj && startDateObj.getMonth() === endDateObj.getMonth() && startDateObj.getFullYear() === endDateObj.getFullYear()
+          const startLabel = endDateObj && sameMonth ? format(startDateObj,'d.',{locale:cs}) : format(startDateObj,'d. MMMM',{locale:cs})
+          const endLabel = endDateObj ? format(endDateObj,'d. MMMM',{locale:cs}) : null
+          
           return (
             <div 
               key={competition.id} 
@@ -122,24 +128,16 @@ export default function CompetitionSection() {
               
               <div className="space-y-2 text-sm text-semin-gray mb-4">
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  {format(new Date(competition.date), 'dd.MM.yyyy HH:mm', { locale: cs })}
-                  {competition.endDate && (
-                    <> – {format(new Date(competition.endDate), 'dd.MM.yyyy HH:mm', { locale: cs })}</>
-                  )}
+                  <span className="mr-2">🗓️</span>
+                  {startLabel}
+                  {endLabel && <> – {endLabel}</>}
                 </div>
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0a6 6 0 01-6 0m6 0a6 6 0 006 6v1H9zm1.677-45A8.97 8.97 0 0118 12a8.97 8.97 0 01-3.323 7H21V3h-3.323z" />
-                  </svg>
-                  {registrationCount} / {competition.capacity} účastníků
+                  <span className="mr-2">🕒</span>
+                  Start: {format(new Date(competition.date), 'HH:mm', { locale: cs })}
                 </div>
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
+                  <span className="mr-2">✅</span>
                   Vstupné: {competition.entryFee} Kč
                 </div>
               </div>
@@ -162,13 +160,7 @@ export default function CompetitionSection() {
                 </div>
               ) : (
                 <div className="text-center">
-                  <span className={`text-sm ${
-                    selectedCompetition?.id === competition.id 
-                      ? 'text-semin-blue font-medium' 
-                      : 'text-semin-gray'
-                  }`}>
-                    {selectedCompetition?.id === competition.id ? 'Vybráno' : 'Klikněte pro registraci'}
-                  </span>
+                  <span className="text-sm text-semin-gray">👥 {registrationCount} / {competition.capacity} účastníků</span>
                 </div>
               )}
             </div>

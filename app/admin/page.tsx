@@ -841,21 +841,11 @@ export default function AdminDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {reservation.rentedGear ? (
                           <div className="space-y-1">
-                            {reservation.rentedGear.split(',').map((gearId: string, index: number) => {
-                              const gearNames = {
-                                'rod_reel': '🎣 Prut+naviják',
-                                'tackle_box': '🗃️ Drobné náčiní',
-                                'chair': '🪑 Židle',
-                                'net': '🥅 Podběrák',
-                                'rum_flask': '🥃 Flaška rumu',
-                                'bait': '🪱 Návnada'
-                              }
-                              return (
-                                <div key={index} className="text-xs text-green-600">
-                                  {gearNames[gearId as keyof typeof gearNames] || gearId}
-                                </div>
-                              )
-                            })}
+                            {getGearNames(reservation.rentedGear).map((name, idx) => (
+                              <div key={idx} className="text-xs text-green-600">
+                                {name}
+                              </div>
+                            ))}
                           </div>
                         ) : (
                           <span className="text-xs text-gray-400">—</span>

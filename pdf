@@ -1,0 +1,707 @@
+Praha, verze 1.2
+Datum vydání: 1. června 2021
+Datum účinnosti: 1. ledna 2022
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+OBSAH
+1 ZMĚNY ............................................................................................................................................4
+2 ÚVOD ..............................................................................................................................................5
+3 VYUŽITÍ FORMÁTU .........................................................................................................................5
+4 VÝCHODISKA PRO NÁVRH FORMÁTU ............................................................................................5
+5 POPIS FORMÁTU ŘETĚZCE .............................................................................................................6
+5.1 QR Platba ..........................................................................................................................6
+5.2 Příklady .......................................................................................................................... 17
+6 UKLÁDÁNÍ A SDÍLENÍ ŘETĚZCE .................................................................................................... 19
+Stránka 2 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+PŘÍLOHY
+č.1 Velikost QR kódu
+č.2 Kódování speciálních znaků
+č.3 Reference
+VYSVĚTLIVKY
+QR kód - QR Code – Quick Response Code, dvojrozměrný kód, zapisovaný do čtverce, QR kódy zpravidla
+obsahují internetovou adresu nebo kontaktní informace
+NFC - Near Field Communication – technologie, která slouží k bezdrátové komunikaci mezi
+elektronickými zařízeními na krátkou vzdálenost, obvykle přiblížením zařízení do vzdálenosti několika
+centimetrů
+Stránka 3 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+1 ZMĚNY
+Verze Popis Účinné od
+1.0 Vydání standardu pro QR Platbu Listopad 2012
+1.1 Rozšíření standardu:
+▪ Definice pro zadání trvalého příkazu
+▪ Definice pro zadání svolení k inkasu
+▪ Přidání pole „Zpráva pro mne“
+Květen 2015
+1.2 Rozšíření standardu:
+▪ Definice pro zadání okamžitého příkazu
+▪ Aktualizace příkladů hlavičky a vygenerovaných QR kódů
+▪ Opravy faktických chyb a formátování textu
+leden 2022
+Stránka 4 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+2 ÚVOD
+Účelem tohoto Standardu je stanovit zásady a pravidla pro používání formátu pro sdílení platebních
+informací, který umožní snadný přenos parametrů platby mezi mobilními zařízeními prostřednictvím
+QR kódů nebo technologie NFC. Formát je možné použít pro předvyplnění platebního příkazu na
+mobilním zařízení nebo pro provádění evidence plateb, bez nutnosti přepisovat jednotlivé parametry
+platby ručně.
+3 VYUŽITÍ FORMÁTU
+Praktické využití formátu spočívá především v přenosu platebních údajů bez zásahu lidského faktoru.
+Tím se jednak zvýší komfort pro klienty, ale také sníží počet špatně zadaných plateb a nákladů na jejich
+dohledávání, případně vymáhání. Typickým příkladem použití je uvedení QR kódu s platebními údaji
+na faktuře pro iniciaci platby. Klient v takovém případě spustí na chytrém telefonu/tabletu bankovní
+aplikaci a QR kód načte. Tím se mu předvyplní příslušná pole platebního příkazu v mobilní aplikaci.
+Klient údaje zkontroluje, platební příkaz autorizuje a odešle. Vše se obejde bez ručního zadávání čísla
+účtu, částky, variabilního symbolu atd. Tím nejen roste uživatelská spokojenost, ale také klesá
+chybovost zadání a nutnost řešit reklamace.
+4 VÝCHODISKA PRO NÁVRH FORMÁTU
+Definice formátu řetězce vychází z těchto požadavků:
+▪ formát by měl obsahovat co nejmenší počet znaků (rychlý přenos, malý potřebný prostor pro
+QR kód),
+▪ lidsky čitelný (možnost ověřit si obsah platebních instrukcí – prevence podvodu),
+▪ musí obsahovat definici pro nezbytné a nejčastěji používané atributy platby tuzemského
+platebního styku a základní atributy přeshraničního převodu,
+▪ formát musí být jednoznačně identifikovatelný (odlišení od ostatních datových formátů
+určených pro jiné účely),
+▪ musí být optimalizovaný pro přenos pomocí QR kódu (nejčastější očekávané použití, možnost
+použít přístroje s horšími parametry fotoaparátu),
+▪ musí být rozšiřitelný a technicky kompletní (možnost dalšího rozvoje),
+▪ využívání formátu není vázáno licencemi dodavatelů formátu, a to jak v oblasti datové
+struktury, tak v oblasti licenčních poplatků.
+Stránka 5 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+5 POPIS FORMÁTU ŘETĚZCE
+Formát řetězce je upraven tak, aby byl kompaktní, co se velikosti obsažených dat týče. Výhodou
+navrženého formátu je relativně dobrá lidská čitelnost a potenciální rozšiřitelnost o specifické atributy.
+Řetězec může obsahovat libovolné znaky ze znakové sady UTF-8. Pro efektivní uložení do QR kódu
+doporučujeme sestavit řetězec tak, aby obsahoval pouze následující znaky:
+▪ 0–9
+▪ A–Z [pouze velká písmena]
+▪ mezera
+▪ $, %, *, +, -, ., /, :
+Při zachování znaků výhradně z uvedené množiny bude použit tzv. alfanumerický formát QR kódu.
+Množina znaků používaná v klíčích a řídících strukturách navrženého formátu je proto volena právě
+z této množiny tak, aby nebylo zabráněno dosažení maximální možné efektivity uložení platebních
+informací do QR kódů. Bude-li v hodnotě kteréhokoli pole použit znak z jiné množiny, než je uvedena
+výše, bude použit tzv. binární formát QR kódu.
+QR kód by měl být pro tištěná media generován s úrovní kontroly chyb M (obnovitelnost 15%).
+5.1 QR Platba
+Řetězec je vždy zahájen fixní hlavičkou:
+- pro příkaz k úhradě (včetně požadavku na provedení platby jako „Okamžitá platba“, pokud je
+to možné, a daná banka zpracování „Okamžitých plateb“ podporuje) a pro trvalý příkaz
+k úhradě je použita hlavička SPD* (short payment descriptor)
+- pro svolení k inkasu je použita hlavička SCD* (short collection descriptor).
+Následuje verze protokolu (dvě čísla oddělená tečkou) ukončená hvězdičkou, např. 1.0*. Následně
+řetězec obsahuje jednotlivé atributy platby ve formátu:
+▪ ${klíč}:${hodnota}*
+Tedy klíč je od hodnoty oddělen dvojtečkou, hodnota je zakončena hvězdičkou. Pole ${hodnota} nesmí
+obsahovat hvězdičku (může být v hodnotě zakódována jako %2A).
+Stránka 6 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+${klíč} Klíč daného atributu je vždy zapsán velkými znaky z množiny znaků [A-Z-]. Seznam
+přípustných klíčů (základní sada atributů) je uveden v Tabulce 1. Formát může být
+rozšířen o proprietární klíče, které mají např. lokální význam pro konkrétní lokalitu
+nebo instituci. Sada již nyní uvažovaných rozšiřujících klíčů je uvedena v Tabulce 2.
+Takovéto klíče jsou uvozeny znaky X-
+.
+${hodnota} Hodnota daného atributu může obsahovat libovolné znaky, ale musí být zároveň v
+přípustném formátu pro dané pole - viz. popis formátu hodnoty v Tabulce 1 a Tabulce
+2. Hodnota nesmí být obklopena bílými znaky (tj. za “:” a před “*” nesmí být bílé
+znaky) a nesmí obsahovat znak * (hvězdička). Hodnota může obsahovat znak :
+(dvojtečka).
+Hodnota může obsahovat speciální znaky kódované pomocí URL kódování, tj. např.
+hvězdičku je možno do hodnoty zahrnout pomocí zápisu %2A.
+Pozn.: Podpora pro kódování speciálních znaků je základním parametrem typově
+podobných formátů. V principu existuje několik přístupů, např. HTML entity, back-
+slashing nebo touto specifikací zvolené URL kódování.
+Pokud bude hodnota obsahovat více znaků, než připouští formát, bude zpracován
+pouze formátem specifikovaný počet znaků zleva, ostatní budou ignorovány.
+Stránka 7 z 23
+Tabulka 1 – základní atributy
+Klíč Povinný Délka ACC ANO Max. 46 znaků
+(IBAN+BIC)
+ALT-ACC NE Max. 93 znaků
+(2x pole ACC +
+oddělovač)
+AM NE Max. 10 znaků
+Pozn.:
+Odpovídá
+Formát IBAN, BIC IBAN, BIC Desetinné číslo.
+Max. 2
+desetinné cifry.
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Příklad zápisu klíče
+Popis formátu hodnoty
+a hodnoty
+Identifikace protistrany, která je
+ACC:CZ585500000
+složena ze dvou komponent
+0001265098001+R
+oddělených znaménkem +
+ZBCCZPP*
+Tyto komponenty jsou:
+... a nebo (varianta
+číslo účtu ve formátu IBAN
+bez čísla BIC):
+identifikace banky ve formátu
+ACC:CZ585500000
+SWIFT dle ISO 9362.
+0001265098001*
+Druhá komponenta (SWIFT) je
+přitom volitelná.
+Seznam alternativních účtů
+ALT-
+k výchozímu účtu danému
+ACC:CZ585500000
+hodnotou ACC. Jednotlivé
+0001265098001+R
+záznamy mají stejný formát jako
+ZBCCZPP,CZ585500
+pole ACC a jsou odděleny čárkou.
+000000126509800
+Klientské aplikace mohou tento
+1*
+seznam použít pro zobrazení
+volby, na který účet se má platba
+odeslat, např. za účelem
+optimalizace výše poplatků za
+převod.
+Pro potřebu zachování
+akceptovatelné datové hustoty
+dat na mediu typu QR kód se do
+pole nedoporučuje vkládat více
+než 2 alternativní čísla účtu.
+Výše částky platby AM:480.55*
+Stránka 8 z 23
+Klíč CC RF RN DT Povinný NE NE NE NE Délka částce 9 999
+999,99
+Právě 3 znaky Max. 16 znaků Max. 35 znaků Právě 8 znaků Formát Tečka jako
+oddělovač
+desetinných
+míst.
+ISO 4217 -
+délka 3 znaky,
+velká písmena.
+Celé číslo Všechny znaky
+z povolené
+množiny mimo
+‘*’
+ISO 8601,
+tj. datum ve
+formátu
+YYYYMMDD.
+Pouze
+numerické
+znaky.
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Příklad zápisu klíče
+Popis formátu hodnoty
+a hodnoty
+V případě neprázdného pole FRQ
+je pole DT interpretováno jako
+částka pravidelných plateb
+z trvalého příkazu.
+V případě, že je řetězec zahájen
+hlavičkou SCD*, je pole AM
+interpretováno jako výše limitu
+inkas.
+Měna platby – aktuálně povolena
+CC:CZK*
+pouze měna CZK
+Identifikátor platby pro příjemce RF:1234567890123
+456*
+Jméno příjemce RN:PETR DVORAK*
+Datum splatnosti
+DT:20210430*
+V případě neprázdného pole FRQ
+je pole DT interpretováno jako
+datum první platby trvalého
+příkazu.
+V případě, že je řetězec zahájen
+hlavičkou SCD*, je pole DT
+Stránka 9 z 23
+Klíč PT MSG CRC32 Povinný NE NE NE Délka Max. 3 znaky Max. 60 znaků Právě 8 znaků Formát Všechny znaky
+z povolené
+množiny mimo
+‘*’
+Všechny znaky
+z povolené
+množiny mimo
+‘*’
+Znaky
+z množiny:
+[A-F0-9]
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Příklad zápisu klíče
+Popis formátu hodnoty
+a hodnoty
+interpretováno jako začátek
+platnosti svolení k inkasu.
+Typ platby
+PT:IP*
+Hodnota „IP“ indikuje požadavek
+na provedení příkazu k úhradě
+formou okamžité platby, pokud
+je to v dané bance možné.
+Zpráva pro příjemce
+MSG:PLATBA ZA
+ELEKTRINU*
+V případě neprázdného pole FRQ
+je pole MSG interpretováno jako
+název trvalého příkazu.
+V případě, že je řetězec zahájen
+hlavičkou SCD*, je pole MSG
+interpretováno jako název
+svolení k inkasu.
+Kontrolní součet. Hodnota
+CRC32:1234ABCD*
+vznikne propočtem CRC32
+řetězce bez hodnoty CRC32 a
+převedením této číselné hodnoty
+do hexadecimálního zápisu.
+Princip vypočítání CRC32
+(zajištění jednoznačnosti
+reprezentace pro výpočet CRC32):
+• Použijí se všechny atributy
+mimo atributu CRC32
+• Sestaví se kanonický řetězec
+tak, že převezme hlavičku
+Stránka 10 z 23
+Klíč NT NTA DL Povinný NE NE NE Délka Právě 1 znak Max. 320 znaků Právě 8 znaků Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Příklad zápisu klíče
+Formát Popis formátu hodnoty
+a hodnoty
+(„SPD*1.0*”), ostatní
+atributy se setřídí dle klíče a
+sekundárně dle hodnoty, v
+tomto pořadí se zakódují do
+řetězce dle specifikace a
+sestaví se tak základ pro
+počítání CRC32.
+Výsledek se převede do
+šestnáctkové soustavy.
+P (= phone)
+Identifikace kanálu pro zaslání
+NT:P* - notifikace
+E (= e-mail)
+notifikace výstavci platby.
+bude zaslána
+Poznámka: odesílání notifikací se
+formou SMS
+řídí podle podmínek jednotlivých
+NT:E*
+- notifikace
+bank, nicméně doporučuje se
+bude zaslána
+odesílat v okamžiku blokace
+formou e-mailu
+prostředků na účtu plátce.
+pro NT:P
+Telefonní číslo v mezinárodním
+NTA:00420123456
++N[12]
+nebo lokálním vyjádření
+789*
+nebo
+NTA:+4201234567
+pro NT:E
+E-mailová adresa
+89*
+e-
+NTA:123456789*
+mailAddress[64
+NTA:frantisek.koud
+]@domainNam
+elka@abc.cz*
+e[255]
+ISO 8601,
+V případě neprázdného pole FRQ
+DL:20251231*
+tj. datum ve
+je pole DL interpretováno jako
+formátu
+datum ukončení platnosti
+YYYYMMDD.
+trvalého příkazu.
+Stránka 11 z 23
+Klíč FRQ DH Povinný NE NE Délka Max. 3 znaky Max. 1 znak Formát Pouze
+numerické
+znaky.
+Alfanumerický
+kód označující
+frekvenci
+platby:
+1D = denně
+1M = měsíčně
+3M = čtvrtletně
+6M = pololetně
+1Y = ročně
+Číslo z množiny
+(0, 1)
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Příklad zápisu klíče
+Popis formátu hodnoty
+a hodnoty
+V případě, že je řetězec zahájen
+hlavičkou SCD*, je pole DL
+interpretováno jako konec
+platnosti svolení k inkasu.
+V případě neprázdného pole FRQ
+FRQ:1M*
+je celý řetězec SPAYD
+interpretován jako instrukce pro
+trvalý příkaz k úhradě, a pole FRQ
+je interpretováno jako frekvence
+plateb z trvalého příkazu.
+V případě, že je řetězec zahájen
+hlavičkou SCD*, je pole FRQ
+interpretováno jako období pro
+limit inkas, tj. období, v jehož
+průběhu nesmí být částka
+provedeného inkasa vyšší než
+zadaný limit (pole AM).
+Instrukce, zda trvalý příkaz
+DH:0*
+k úhradě nebo platby na základě
+nastaveného svolení k inkasu
+provádět po úmrtí majitele účtu.
+0 = provádět po úmrtí majitele
+účtu;
+1 = neprovádět po úmrtí majitele
+účtu.
+Pokud pole DH není v řetězci
+přítomno, nebo pole DH nemá
+vyplněnou žádnou hodnotu,
+Stránka 12 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Příklad zápisu klíče
+Klíč Povinný Délka Formát Popis formátu hodnoty
+a hodnoty
+bude celý řetězec vyhodnocen,
+jako kdyby obsahoval pole DH
+s hodnotou 0.
+Tabulka 2 – Rozšířené atributy pro platební styk v rámci ČR
+Rozšíření pro české podmínky obsahuje speciální atributy pro identifikátory bankovních plateb.
+Klíč Povinný Délka Formát Popis formátu hodnoty Příklad zápisu klíče a
+hodnoty
+X-PER NE Max. 2 znaky Celé číslo
+Počet dní, po které se má
+X-PER:7*
+Max. Hodnota
+provádět pokus o opětovné
+30
+provedení neúspěšné platby
+(z důvodů např.
+nedostupných prostředků na
+účtu příkazce).
+X-VS NE Max. 10 znaků Celé číslo Variabilní symbol X-VS:1234567890*
+X-SS NE Max. 10 znaků Celé číslo Specifický symbol X-SS:1234567890*
+X-KS NE Max. 10 znaků Celé číslo Konstantní symbol X-KS:1234567890*
+Stránka 13 z 23
+Klíč X-ID X-URL X-SELF Povinný NE NE NE Délka Max. 20 znaků Max. 140 znaků Max. 60 znaků Formát Všechny znaky
+z povolené
+množiny mimo
+‘*’
+Všechny znaky
+z povolené
+množiny mimo
+‘*’
+Všechny znaky
+z povolené
+množiny mimo
+‘*’
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Popis formátu hodnoty Příklad zápisu klíče a
+hodnoty
+Identifikátor platby na straně
+X-
+příkazce. Jedná se o interní
+ID:ABCDEFGHIJ12345
+ID, jehož použití
+67890*
+a interpretace závisí na
+bance příkazce.
+Může být použito například
+jako identifikace
+e-commerce platby, nebo
+pro statistické či
+marketingové účely.
+URL, které je možno využít
+X-
+pro vlastní potřebu
+URL:HTTP://WWW.SO
+MEURL.COM/*
+Zpráva pro vlastní potřebu
+X-SELF: PLATBA ZA
+plátce.
+TELCO SLUZBY*
+Stránka 14 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Tabulka 3 – Atributy, které jsou schopny zpracovat všechny banky v ČR pro tuzemský platební styk –
+příkaz k úhradě
+Uvedené atributy je schopna zpracovat kterákoliv banka v ČR v rámci tuzemského platebního styku.
+Atributy, které nejsou v této tabulce uvedené, jsou schopny zpracovat pouze některé banky. Více
+informací je k dispozici vždy na dotaz u konkrétní banky.
+Klíč Zpracují všechny banky
+ACC ANO, vždy jen jeden účet
+ALT-ACC
+AM ANO
+CC ANO, pro tuzemský platební styk pouze CZK
+DT ANO
+MSG ANO
+X-VS ANO
+X-SS ANO
+X-KS ANO
+Stránka 15 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Tabulka 4 – Atributy, které jsou schopny zpracovat všechny banky v ČR pro tuzemský platební styk –
+trvalý příkaz k úhradě
+Uvedené atributy je schopna zpracovat kterákoliv banka v ČR v rámci tuzemského platebního styku pro
+trvalý příkaz k úhradě. Atributy, které nejsou v této tabulce uvedené, jsou schopny zpracovat pouze
+některé banky. Více informací je k dispozici vždy na dotaz u konkrétní banky.
+Zpracují všechny banky
+Klíč ACC ANO, vždy jen jeden účet
+AM ANO
+CC ANO, pro tuzemský platební styk pouze CZK
+DT ANO
+DL ANO
+FRQ ANO
+X-VS ANO
+X-SS ANO
+X-KS ANO
+Tabulka 5 – Atributy, které jsou schopny zpracovat všechny banky v ČR pro tuzemský platební styk –
+svolení k inkasu
+Uvedené atributy je schopna zpracovat kterákoliv banka v ČR v rámci tuzemského platebního styku pro
+svolení k inkasu. Atributy, které nejsou v této tabulce uvedené, jsou schopny zpracovat pouze některé
+banky. Více informací je k dispozici vždy na dotaz u konkrétní banky.
+Klíč Zpracují všechny banky
+ACC ANO, vždy jen jeden účet
+AM ANO
+CC ANO, pro tuzemský platební styk pouze CZK
+DT ANO
+DL ANO
+FRQ ANO
+Stránka 16 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+5.2 Příklady
+5.2.1 Příklad QR Platby – Příkaz k úhradě
+Zpráva:
+SPD*1.0*ACC:CZ3301000000000002970297*AM:555.55*CC:CZK*RF:7004139146*X-
+VS:0987654321*X-SS:1234567890*X-KS:0558*DT:20210430*MSG:PRISPEVEK NA NADACI
+QR kód:
+5.2.2 Příklad QR Platby – Příkaz k úhradě – požadavek na provedení jako „Okamžitá platba“
+Zpráva:
+SPD*1.0*ACC:CZ3301000000000002970297*AM:555.55*CC:CZK*RF:7004139146*X-
+VS:0987654321*X-SS:1234567890*X-KS:0558*PT:IP*MSG:PRISPEVEK NA NADACI
+QR kód:
+Stránka 17 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+5.2.3 Příklad QR Platby – Trvalý příkaz k úhradě
+Zpráva:
+SPD*1.0*ACC:CZ3301000000000002970297*AM:555.55*CC:CZK*FRQ:1M*DT:20210430*DL:202304
+30*DH:0*MSG:PRAVIDELNY PRISPEVEK NA NADACI
+QR kód:
+5.2.4 Příklad QR Platby – Svolení k inkasu
+Zpráva:
+SCD*1.0*ACC:CZ3301000000000002970297*AM:555.55*CC:CZK*FRQ:1M*DT:20210430*DL:202604
+30*DH:0*MSG:PRAVIDELNY PRISPEVEK NA NADACI
+QR kód:
+Stránka 18 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+6 UKLÁDÁNÍ A SDÍLENÍ ŘETĚZCE
+Formát definuje pro potřeby klientských aplikací vlastní příponu souboru pro případ uložení a vlastní
+MIME type.
+MIME-type: application/x-shortpaymentdescriptor
+Přípona souboru: *.spayd
+Stránka 19 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Příloha č.1: VELIKOST QR KÓDU
+Aby bylo možné QR kód rychle a správně načíst, měl by mít na displeji zařízení délku strany alespoň 1
+cm. Při větší vzdálenosti zařízení od QR kódu je pak nezbytné, aby i QR kód na předloze byl větší. Pro
+většinu smartphonů je poměr mezi vzdáleností čtecího zařízení od QR kódu a strany QR kódu zhruba
+10:1.
+Čím více dat (delší řetězec) QR kód obsahuje, tím jsou jednotlivé „tečky“ na stejné ploše QR kódu menší
+– zvyšuje se hustota dat. Aby bylo možné QR kód za běžných i zhoršených světelných i fyzických
+podmínek (např. zmuchlaný papír) efektivně načíst, doporučuje se volit fyzickou velikost QR kódu dle
+tohoto vzorce:
+Minimální délka strany QR kódu = (Čtecí vzdálenost/Faktor vzdálenosti) * Faktor datové hustoty
+▪ Čtecí vzdálenost je vzdálenost zařízení od QR kódu
+▪ Faktor vzdálenosti - poměr čtecí vzdálenosti a délky strany QR kódu pro bezpečné načtení kódu
+dle výše uvedeného odstavce – tedy 10.
+▪ Faktor datové hustoty - počet sloupců „teček“ QR kódu normalizovaný na velikost QR kódu
+Varianty 2, která obsahuje 25 sloupců.
+Porovnání velikostí QR kódů
+Tabulka 1 obsahuje porovnání velikostí QR kódů obsahujících platební údaje ve formátu dle
+navrhovaného standardu. Kódy jsou rozlišeny jednak podle množství obsažených platebních údajů a
+jednak dle použité znakové sady použité v hodnotách polí formátu (alfanumerická versus binární). U
+každého QR kódu je uveden počet „teček“ podél jedné strany kódu a doporučená velikost (délka
+strany) obrázku kódu.
+Velikost strany kódu je vypočítávána dle vzorce uvedeného v příloze č. 1 navrhovaného standardu
+(Minimální délka strany QR kódu = (Čtecí vzdálenost/Faktor vzdálenosti) * Faktor datové hustoty), čímž
+by mělo být zajištěno, že QR kód bude dobře čitelný libovolným přístrojem za běžných či zhoršených
+světelných podmínek.
+QR kódy jsou dle doporučení standardu generovány s úrovní kontroly chyb M (obnovitelnost 15%).
+Poznámka: QR kódy v následující tabulce nejsou zobrazeny v doporučených velikostech.
+Stránka 20 z 23
+Tabulka 1 – velikosti QR kódů
+Typ Minimalistický
+- číslo účtu
+- zpráva pro příjemce
+Typický
+- číslo účtu
+- částka
+- měna
+- variabilní symbol
+- datum splatnosti
+- zpráva pro příjemce
+Velký
+- číslo účtu
+- částka
+- měna
+- datum splatnosti
+- zpráva pro příjemce
+- variabilní symbol
+- specifický symbol
+- konstantní symbol Plný
+- číslo účtu
+- alternativní účty
+- částka
+- měna
+- datum splatnosti
+- zpráva pro příjemce
+- variabilní symbol
+- specifický symbol
+- konstantní symbol
+- reference
+- jméno plátce
+- typ platby
+- typ notifikace
+- hodnota notifikace
+Alfanumerický 29 „teček“
+délka strany 23,2 mm
+37 „teček“
+délka strany 29,6 mm
+45 „teček“
+délka strany 36 mm
+73 „teček“
+délka strany 58,4 mm
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Binární
+33 „teček“
+délka strany 26,4 mm
+41 „teček“
+délka strany 32,8 mm
+53 „teček“
+délka strany 42,4 mm
+73 „teček“
+délka strany 58,4 mm
+Stránka 21 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Příloha č. 2: KÓDOVÁNÍ SPECIÁLNÍCH ZNAKŮ
+Předpokládejme, že máme nějaký libovolný řetězec platby délky D. Tento řetězec nechť obsahuje
+S speciálních znaků, S < D. (Poznamenejme už nyní, že tyto znaky mohou být prakticky pouze
+v hodnotách těch polí, která nemají omezený formát hodnoty.)
+Tento řetězec můžeme zakódovat do QR kódu 2 způsoby: přímo (tedy uvedením přímo UTF-8 znaku) a
+nebo pomocí kódování navrženého výše (alfanumerické znaky a URL kódování).
+Otázka je, pro jakou hodnotu S dojde k tomu, že přímé zapsání speciálních znaků je efektivnější, než
+kódování pomocí kombinace povolených znaků a URL kódování speciálních znaků. Předpokládejme, že
+každý speciální znak je kódován pomocí max. 6ti znaků (např. %C5%BE) – přestože to takto nemusí být
+pro všechny speciální znaky, snažíme se obdržet bezpečný odhad a proto uvažujeme S znaků
+zakódovaných pomocí 6B. Délka takovéhoto řetězce je potom (D – S) + 6xS. Odpovídající znaky ze sady
+UTF-8 (tj. ty, které jsou > 128) jsou reprezentovány jako 2B. Proto je délka „napřímo“ zakódovaného
+řetězce (D – S) + 2xS = D + S.
+Potom hledáme takové S, pro které platí:
+6 x S + (D – S) = k x (D + S)
+.. kde k je „koeficient efektivity“ uložení jednotlivých znaků do QR kódu při alfanumerickém kódování
+– prakticky (QR kód var. 7) hodnota zhruba k = 1.45.
+Po úpravě a dosazení do vzorce dostáváme:
+S = 0.09 x D
+Vezměme praktický příklad řetězce uvedeného ve Standardu:
+SPD*1.0*ACC:CZ5855000000001265098001*AM:480.50*CC:CZK*RF:7004139146*X-
+SS:1234567890*DT:20120524*MSG:PLATBA ZA ZBOZI
+Délka D tohoto řetězce je 115 znaků. Aby se tedy vyplatilo neprovádět kódování speciálních znaků
+v podobném řetězci, musel by obsahovat alespoň 15 speciálních znaků. Uvedení speciálního znaku
+v tomto řetězci je možné pouze v případě pole MSG.
+Stránka 22 z 23
+Formát pro sdílení platebních údajů
+v rámci tuzemského platebního styku
+v ČZK prostřednictvím QR kódů, verze 1.2
+Příloha č. 3: REFERENCE
+[1] QR Code Standardization. In: [online]. [cit. 2012-06-06]. Dostupné z:
+http://www.denso-wave.com/qrcode/qrstandard-e.html
+[2] NFC Forum Specifications. In: [online]. [cit. 2012-06-06]. Dostupné z:
+http://www.nfc-forum.org/specs/
+[3] Financial services - International bank account number (IBAN) -- Part 1: Structure of the IBAN. In: [online].
+[cit. 2012-06-06]. Dostupné z:
+http://www.iso.org/iso/iso_catalogue/catalogue_tc/catalogue_detail.htm?csnumber=41031
+[4] Systém elektronického bankovnictví MultiCash, Napojení na účetní systémy – popis exportních / importních
+souborů. In: [online]. [cit. 2012-06-06]. Dostupné z:
+http://www.rb.cz/attachements/pdf/firemni-finance/velke-podniky/platebni-styk-a-cash-
+management/multicash-struktura-dat.pdf
+[5] ISO 4217 currency and funds name and code elements. In: [online]. [cit. 2012-06-06]. Dostupné z:
+http://www.iso.org/iso/support/faqs/faqs_widely_used_standards/widely_used_standards_other/currency_co
+des/currency_codes_list-1.htm
+[6] VCard. In: Wikipedia: the free encyclopedia [online]. San Francisco (CA): Wikimedia Foundation, 2001-
+[cit. 2012-06-06]. Dostupné z:
+http://en.wikipedia.org/wiki/VCard
+[7] Kategorie:Identifikátory bankovních plateb. In: Wikipedia: the free encyclopedia [online]. San Francisco (CA):
+Wikimedia Foundation, 2001- [cit. 2012-06-06]. Dostupné z:
+http://cs.wikipedia.org/wiki/Kategorie:Identifik%C3%A1tory_bankovn%C3%ADch_plateb
+[8] ISO 8601. In: Wikipedia: the free encyclopedia [online]. San Francisco (CA): Wikimedia Foundation, 2001-
+[cit. 2012-06-06]. Dostupné z:
+http://en.wikipedia.org/wiki/ISO_8601
+[9] ISO 9362. In: Wikipedia: the free encyclopedia [online]. San Francisco (CA): Wikimedia Foundation, 2001-
+[cit. 2012-06-06]. Dostupné z:
+http://en.wikipedia.org/wiki/ISO_9362
+[10] Uniform Resource Identifiers (URI): Generic Syntax [online]. [cit. 2012-06-26]. Dostupné z:
+http://www.ietf.org/rfc/rfc2396.txt
+[11] MIME. In: Wikipedia: the free encyclopedia [online]. San Francisco (CA): Wikimedia Foundation, 2001-
+[cit. 2012-06-06]. Dostupné z:
+http://en.wikipedia.org/wiki/MIME
+[12] QR Code (Storage). In: Wikipedia: the free encyclopedia [online]. San Francisco (CA): Wikimedia Foundation,
+2001- [cit. 2012-06-06]. Dostupné z:
+http://en.wikipedia.org/wiki/QR_code#Storage
+Stránka 23 z 23

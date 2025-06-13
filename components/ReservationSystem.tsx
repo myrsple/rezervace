@@ -21,6 +21,7 @@ export default function ReservationSystem() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [weatherForecast, setWeatherForecast] = useState<WeatherData | null>(null)
+  const [bookingConfirmed, setBookingConfirmed] = useState(false)
   // Light-box for the lovná místa map
   const [showMap, setShowMap] = useState(false)
   const [mapZoom, setMapZoom] = useState(1)
@@ -225,6 +226,7 @@ export default function ReservationSystem() {
   const handleReservationComplete = () => {
     // Refresh reservations after successful booking
     fetchReservations()
+    setBookingConfirmed(true)
     
     // Don't reset the form state immediately
     // The user needs to see the success message first
@@ -433,19 +435,19 @@ export default function ReservationSystem() {
       {/* Step 3: Booking Form */}
       {selectedSpot && selectedDate && selectedDuration !== 'day' && (
         <div className="bg-white rounded-2xl shadow-soft p-8">
-          <h2 className="text-3xl font-bold text-semin-blue mb-6">
-            Zbývá už jen potvrdit ✅
-          </h2>
-
-          {/* Reservation Summary */}
-          <div className="mb-8">
-            <ReservationSummary
-              spot={selectedSpot}
-              date={selectedDate}
-              duration={selectedDuration}
-              timeSlot={selectedTimeSlot}
-            />
-          </div>
+          {!bookingConfirmed && (
+            <>
+              <h2 className="text-3xl font-bold text-semin-blue mb-6">Zbývá už jen potvrdit ✅</h2>
+              <div className="mb-8">
+                <ReservationSummary
+                  spot={selectedSpot}
+                  date={selectedDate}
+                  duration={selectedDuration}
+                  timeSlot={selectedTimeSlot}
+                />
+              </div>
+            </>
+          )}
 
           <BookingForm
             spot={selectedSpot}

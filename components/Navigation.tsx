@@ -7,13 +7,6 @@ import { usePathname } from 'next/navigation'
 export default function Navigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
-  // Periodic highlight for Rezervovat button
-  const [highlight, setHighlight] = useState(false)
-
-  useEffect(() => {
-    const id = setInterval(() => setHighlight(h => !h), 5000)
-    return () => clearInterval(id)
-  }, [])
 
   const links = [
     { href: '/o-nas', label: 'O nás' },
@@ -29,12 +22,10 @@ export default function Navigation() {
         <div className="flex items-center h-16 lg:justify-between">
           {/* Center / primary action */}
           {(() => {
-            const commonRez = 'px-4 py-2 rounded-xl text-base font-medium transition-colors duration-700 ease-in-out lg:hidden'
+            const commonRez = 'px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 lg:hidden'
             const className = pathname === '/'
               ? `${commonRez} bg-semin-blue text-white shadow-card`
-              : highlight
-                ? `${commonRez} text-semin-blue/80 bg-semin-light-blue/50`
-                : `${commonRez} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
+              : `${commonRez} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
             return (
               <Link href="/" className={className}>Rezervovat</Link>
             )
@@ -45,15 +36,12 @@ export default function Navigation() {
             {[{ href: '/', label: 'Rezervovat' }, ...links.filter(l => l.href !== '/admin')].map(({ href, label }) => {
               const isActive = pathname === href
               const commonBase = 'px-4 py-2 rounded-xl text-base font-medium '
-              const commonRez = `${commonBase} transition-colors duration-700 ease-in-out`
               const commonFast = `${commonBase} transition-all duration-200`
               let className: string
               if (isActive) {
                 className = `${commonFast} bg-semin-blue text-white shadow-card`
               } else if (href === '/') {
-                className = highlight
-                  ? `${commonRez} text-semin-blue/80 bg-semin-light-blue/50`
-                  : `${commonRez} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
+                className = `${commonFast} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
               } else {
                 className = `${commonFast} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
               }

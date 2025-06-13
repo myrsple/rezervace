@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Ryby Semín - Rezervace lovných míst',
   description: 'Sportovní rybolov s občerstvením - rezervujte si své lovné místo online na rybníku Tomášek',
+  icons: {
+    icon: '/icon.jpg', // Path in public/
+  },
 }
 
 export default function RootLayout({

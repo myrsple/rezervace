@@ -1,6 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Competition } from '@/types'
 import { GEAR_ITEMS, getGearTotalPrice } from '@/lib/gear-config'
+import { DEFAULT_BANK_ACCOUNT, generateCzechPaymentQR } from '@/lib/qr-payment'
+import { format } from 'date-fns'
+import { cs } from 'date-fns/locale'
 
 interface CompetitionRegistrationProps {
   competition: Competition
@@ -17,9 +20,62 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [registrationData, setRegistrationData] = useState<any>(null)
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // --------------------------------------------
+  // Ensure the modal scrolls to top once success
+  // state is reached. This hook must be declared
+  // unconditionally to respect the Rules of Hooks.
+  // --------------------------------------------
+  useEffect(() => {
+    if (success && registrationData) {
+      containerRef.current?.scrollTo({ top: 0 })
+    }
+  }, [success, registrationData])
 
   const gearPrice = getGearTotalPrice(selectedGear)
   const totalPrice = competition.entryFee + gearPrice
+
+  // -----------------------------
+  // Formatting helpers for date
+  // -----------------------------
+  const formattedDateRange = (() => {
+    const start = new Date(competition.date)
+    if (competition.endDate) {
+      const end = new Date(competition.endDate)
+      const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+      if (sameMonth) {
+        return `${format(start, 'd.', { locale: cs })} – ${format(end, 'd. MMMM yyyy', { locale: cs })}`
+      }
+      const sameYear = start.getFullYear() === end.getFullYear()
+      if (sameYear) {
+        return `${format(start, 'd. MMMM', { locale: cs })} – ${format(end, 'd. MMMM yyyy', { locale: cs })}`
+      }
+      return `${format(start, 'd. MMMM yyyy', { locale: cs })} – ${format(end, 'd. MMMM yyyy', { locale: cs })}`
+    }
+    return format(start, 'd. MMMM yyyy', { locale: cs })
+  })()
+
+  const startTimeStr = format(new Date(competition.date), 'HH:mm')
+
+  // generate QR after successful registration
+  useEffect(()=>{
+    if(registrationData?.variableSymbol){
+      generateCzechPaymentQR({
+        accountNumber: DEFAULT_BANK_ACCOUNT.accountNumber,
+        bankCode: DEFAULT_BANK_ACCOUNT.bankCode,
+        amount: totalPrice,
+        variableSymbol: registrationData.variableSymbol,
+        message: (()=>{
+          const dateStr = new Date(competition.date).toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric'}).replace(/\s*/g,'')
+          const nameAscii = competition.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          const equipFlag = selectedGear.length>0 ? ' + Vybaveni' : ''
+          return `Vstupne ${nameAscii} ${dateStr}${equipFlag}`
+        })()
+      }).then(setQrCodeUrl).catch(console.error)
+    }
+  },[registrationData,totalPrice,competition.name,selectedGear])
 
   const handleGearToggle = (gearId: string) => {
     setSelectedGear(prev => 
@@ -68,7 +124,7 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
   if (success && registrationData) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl shadow-soft p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div ref={containerRef} className="bg-white rounded-2xl shadow-soft p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <div className="flex flex-col items-center mb-6">
             <div className="w-12 h-12 bg-semin-green/10 rounded-xl flex items-center justify-center mb-3">
               <svg className="w-6 h-6 text-semin-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,16 +140,17 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
           <div className="space-y-6">
             {/* Registration Details */}
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-semin-blue mb-4">Shrnutí registrace</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <div className="text-sm text-blue-800 font-medium mb-1">Shrnutí registrace</div>
-                    <div className="text-sm space-y-1">
+                    <div className="text-sm space-y-2">
                       <div className="flex justify-between"><span className="text-gray-600">Závod:</span><span className="text-gray-900 font-medium">{competition.name}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Datum:</span><span className="text-gray-900 font-medium">{new Date(competition.date).toLocaleDateString('cs-CZ', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Datum:</span><span className="text-gray-900 font-medium">{formattedDateRange}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Začátek:</span><span className="text-gray-900 font-medium">{startTimeStr}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Jméno:</span><span className="text-gray-900 font-medium">{registrationData.customerName}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">E-mail:</span><span className="text-gray-900 font-medium">{registrationData.customerEmail}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Telefon:</span><span className="text-gray-900 font-medium">{registrationData.customerPhone}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">E-mail:</span><span className="text-gray-600">{registrationData.customerEmail}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Telefon:</span><span className="text-gray-600">{registrationData.customerPhone}</span></div>
                     </div>
                   </div>
                   {selectedGear.length > 0 && (
@@ -112,7 +169,7 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
                 </div>
                 <div className="space-y-4">
                   <div className="text-sm text-blue-800 font-medium mb-1">Souhrn ceny</div>
-                  <div className="text-sm space-y-1">
+                  <div className="text-sm space-y-2">
                     <div className="flex justify-between"><span className="text-gray-600">Vstupné:</span><span className="text-gray-900">{competition.entryFee} Kč</span></div>
                     {gearPrice > 0 && (
                       <div className="flex justify-between"><span className="text-gray-600">Vybavení:</span><span className="text-gray-900">{gearPrice} Kč</span></div>
@@ -127,38 +184,22 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
             </div>
 
             {/* Payment Info */}
-            {registrationData.variableSymbol && (
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-                <div className="mb-2 text-sm text-blue-900">Pro urychlení rezervace můžete provést platbu předem.</div>
-                <div className="text-sm text-blue-800 space-y-1 mb-4">
-                  <div className="flex justify-between"><span>Číslo účtu:</span><span className="font-mono text-gray-900">123456789/0100</span></div>
-                  <div className="flex justify-between"><span>Variabilní symbol:</span><span className="font-mono text-gray-900">{registrationData.variableSymbol}</span></div>
-                  <div className="flex justify-between"><span>Částka:</span><span className="font-mono text-gray-900">{totalPrice} Kč</span></div>
-                </div>
-                <div className="flex justify-center mb-2">
+            <div className="pt-6 mt-4 border-t border-blue-100">
+              <div className="text-sm text-blue-800 font-medium mb-1">Platební údaje</div>
+              <div className="text-sm space-y-2 mb-4">
+                <div className="flex justify-between"><span className="text-gray-600">Číslo účtu:</span><span className="font-mono text-gray-900">{DEFAULT_BANK_ACCOUNT.accountNumber}/{DEFAULT_BANK_ACCOUNT.bankCode}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Variabilní symbol:</span><span className="font-mono text-gray-900">{registrationData.variableSymbol}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Částka:</span><span className="font-mono text-gray-900">{totalPrice} Kč</span></div>
+              </div>
+              {qrCodeUrl && (
+                <div className="flex justify-center">
                   <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SPD*1.0*ACC:CZ6801000000123456789*AM:${totalPrice}*CC:CZK*RF:${registrationData.variableSymbol}*MSG:Registrace%20zavod%20${encodeURIComponent(competition.name)}`}
+                    src={qrCodeUrl}
                     alt="QR kód pro platbu"
                     className="w-32 h-32 rounded-lg"
                   />
                 </div>
-                <p className="text-xs text-gray-600 text-center">Naskenujte QR kód pro rychlou platbu</p>
-              </div>
-            )}
-
-            {/* Map Section */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Jak se k nám dostanete</h3>
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1651.405240448874!2d15.531935757891537!3d50.053176652165135!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470c30b45180bd21%3A0x420a9f30bd933982!2zVG9tw6HFoWVr!5e1!3m2!1sen!2scz!4v1749514996026!5m2!1sen!2scz"
-                width="100%"
-                height="200"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="rounded"
-              />
+              )}
             </div>
 
             <button
@@ -177,7 +218,7 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Registrace na závod</h2>
+          <h2 className="text-2xl font-bold text-semin-blue">Registrace na závod</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
@@ -188,11 +229,28 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
 
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 mb-6">
           <div className="mb-2">
-            <h3 className="text-lg font-semibold text-blue-900 mb-1">{competition.name}</h3>
-            <div className="text-sm text-blue-800">
-              <div className="flex justify-between"><span>Datum:</span><span>{new Date(competition.date).toLocaleDateString('cs-CZ', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
-              <div className="flex justify-between"><span>Vstupné:</span><span>{competition.entryFee} Kč</span></div>
-              <div className="flex justify-between"><span>Kapacita:</span><span>{competition.capacity} účastníků</span></div>
+            <h3 className="text-lg font-bold text-semin-blue mb-1">{competition.name}</h3>
+            <div className="text-sm space-y-2">
+              {/* Date range with calendar emoji */}
+              <div className="flex gap-2 items-start">
+                <span className="text-base leading-none">🗓️</span>
+                <span className="text-gray-600">{(()=>{ const start=new Date(competition.date); const end=competition.endDate?new Date(competition.endDate):null; if(end){ const sameMonth=start.getMonth()===end.getMonth() && start.getFullYear()===end.getFullYear(); const range= sameMonth? `${format(start,'d.',{locale:cs})} – ${format(end,'d. MMMM',{locale:cs})}` : `${format(start,'d. MMM.',{locale:cs})} – ${format(end,'d. MMM.',{locale:cs})}`; return range; } return format(start,'d. MMMM',{locale:cs}); })()}</span>
+              </div>
+              {/* Start time */}
+              <div className="flex gap-2 items-start">
+                <span className="text-base leading-none">🕒</span>
+                <span className="text-gray-600">Start: {format(new Date(competition.date), 'HH:mm')}</span>
+              </div>
+              {/* Entry fee */}
+              <div className="flex gap-2 items-start">
+                <span className="text-base leading-none">✅</span>
+                <span className="text-gray-600">Vstupné: {competition.entryFee} Kč</span>
+              </div>
+              {/* Capacity */}
+              <div className="flex gap-2 items-start">
+                <span className="text-base leading-none">👥</span>
+                <span className="text-gray-600">{competition.capacity} účastníků</span>
+              </div>
             </div>
           </div>
         </div>
@@ -250,7 +308,7 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
           <div className="space-y-4">
             <h4 className="text-xl font-bold text-semin-blue mb-4">Potřebujete vybavení?</h4>
             <p className="text-sm text-semin-gray mb-4">
-              Pokud vám něco chybí, můžete si u nás půjčit nebo dokoupit vše potřebné.
+              Pokud vám něco chybí, na místě vám můžeme zapůjčit následující vybavení.
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

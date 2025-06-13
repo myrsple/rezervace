@@ -509,7 +509,7 @@ export default function ReservationCalendar({
 
       {competitions.length > 0 && (
         <div className="mt-6 bg-purple-50 border border-purple-200 rounded-2xl p-6">
-          <h4 className="text-lg font-bold text-purple-900 mb-2">Nadcházející závody</h4>
+          <h4 className="text-lg font-bold text-purple-900 mb-2">Nadcházející závody 🏆</h4>
           <div className="space-y-2">
             {competitions
               .filter(comp => {

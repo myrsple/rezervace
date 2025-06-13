@@ -16,7 +16,7 @@ export default function AboutPage() {
           <h1 className="text-4xl font-bold text-blue-700 mb-6">O nás</h1>
           <p>
             Jsme rodinný tým nadšenců, který provozuje sportovní rybolov a plážový areál u průtočné
-            vodní nádrže&nbsp;<strong>Tomášek</strong> – místní ji znají také jako <em>Baikal</em> nebo <em>Kuklovna</em>. Rybník najdete v&nbsp;Semíně, necelých osm kilometrů od
+            vodní nádrže&nbsp;<strong>Tomášek</strong> – místní ji znají také jako <em>Bajkal</em> nebo <em>Kuklovna</em>. Rybník najdete v&nbsp;Semíně, necelých osm kilometrů od
             Přelouče, uprostřed borových lesů a cyklostezek. Zajišťujeme klidné prostředí pro rybáře, rodiny s&nbsp;dětmi i&nbsp;rekreační
             plavce.
           </p>
@@ -36,6 +36,7 @@ export default function AboutPage() {
           </div>
 
           <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Jak to začalo</h2>
+
           <p>
             Historie rybníka sahá do roku&nbsp;1996, kdy začal jeho výstavbu Josef Tomášek se synem
             Josefem. Původní plocha&nbsp;1,5&nbsp;ha se roku&nbsp;2001 rozšířila na dnešních
@@ -44,10 +45,19 @@ export default function AboutPage() {
             nás nevyskytují sinice. Kvalitu pravidelně testujeme a&nbsp;k osvěžení slouží i venkovní sprcha přímo u pláže.
           </p>
 
+          {/* Photo with overlay caption */}
+          <div className="w-full mt-6 mb-6 relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/tomasek.jpeg" alt="Josef Tomášek se synem Josefem" className="w-full h-auto rounded-lg shadow" />
+            <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs pointer-events-none">
+              Josef Tomášek se synem Josefem
+            </div>
+          </div>
+
           <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Co u nás najdete</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>15&nbsp;lovných míst pro&nbsp;<strong>chyť&nbsp;a&nbsp;pusť</strong> rybolov</li>
-            <li>pláž s&nbsp;občerstvením a&nbsp;točenou zmrzlinou</li>
+            <li>pláž s občerstvením</li>
             <li>dětské hřiště a&nbsp;pozvolný vstup do vody</li>
             <li>pravidelné závody, hudební večery a&nbsp;projekce sportovních přenosů</li>
           </ul>

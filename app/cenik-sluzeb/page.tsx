@@ -1,6 +1,7 @@
 import React from 'react'
 import FacebookFeed from '@/components/FacebookFeed'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Ceník služeb | Ryby Semín',
@@ -34,7 +35,9 @@ export default function PriceListPage() {
           <h1 className="text-4xl font-bold text-blue-700 mb-6">Ceník služeb</h1>
           <p className="lead">
             Níže uvedené ceny odpovídají oficiálnímu ceníku provozovatele k&nbsp;roku&nbsp;2025.
-            Denní i&nbsp;vícedenní povolenky vyřídíte na stránce Rezervujte nebo osobně přímo na&nbsp;pláži u&nbsp;rybníka Tomášek.
+            Denní i&nbsp;vícedenní povolenky vyřídíte telefonicky, na&nbsp;stránce{' '}
+            <Link href="/rezervovat" className="font-semibold text-semin-blue">Rezervovat</Link>, nebo přímo na&nbsp;pláži u&nbsp;rybníka
+            Tomášek.
           </p>
 
           <div className="overflow-x-auto mt-6">

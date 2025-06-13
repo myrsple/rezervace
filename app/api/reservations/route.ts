@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
 import { addDays, addHours } from 'date-fns'
+import { sendReservationConfirmation } from '../../../lib/email'
 
 export async function GET() {
   try {
@@ -177,6 +178,9 @@ export async function POST(request: NextRequest) {
           fishingSpot: true
         }
       })
+
+      // Fire-and-forget confirmation email (no blocking)
+      sendReservationConfirmation(reservation).catch(err => console.error('Failed to send confirmation email', err))
 
       // Ensure we have a valid response object
       const responseData = {

@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import { getGearNames } from './gear-config'
 import { generateCzechPaymentQR } from './qr-payment'
+import { DEFAULT_BANK_ACCOUNT } from './qr-payment'
 
 // Types imported are optional; keeping typing loose for now
 
@@ -72,7 +73,7 @@ export async function sendReservationConfirmation(reservation: any) {
 
   const subject = `🎣 Potvrzení rezervace – ${fishingSpot?.name ?? 'Lovné místo'}${fishingSpot?.number ? ' ('+fishingSpot?.number+')' : ''}`
 
-  const bank = process.env.BANK_ACCOUNT ?? '<doplníme>'
+  const bank = process.env.BANK_ACCOUNT ?? `${DEFAULT_BANK_ACCOUNT.accountNumber}/${DEFAULT_BANK_ACCOUNT.bankCode}`
   const textBody = `Dobrý den ${customerName},\n\n`+
     `děkujeme za vaši rezervaci lovného místa. Posíláme shrnutí a informace k platbě:\n`+
     `------------------------------------------------------------\n`+
@@ -88,7 +89,7 @@ export async function sendReservationConfirmation(reservation: any) {
     `Těšíme se na vás.<br><strong>Lovu zdar!</strong>\n\n`+
     `Tým Sportovní Rybolov Semín`;
 
-  let htmlBody = `\n<style>\n  .rs-table td{padding:4px 8px;}\n  .rs-label{font-weight:600;color:#003366;}\n</style>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Dobrý den <strong>${customerName}</strong>,</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">děkujeme za vaši rezervaci lovného místa. Posíláme shrnutí a informace k platbě:</p>\n<table class="rs-table" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:15px;">\n  <tr><td class="rs-label">📅 Datum:</td><td>${dateRange}</td></tr>\n  <tr><td class="rs-label">🕒 Začátek:</td><td>${startLabel}</td></tr>\n  <tr><td class="rs-label">🎣 Lovné místo:</td><td>${spotLabel}</td></tr>\n  <tr><td class="rs-label">📏 Délka pobytu:</td><td>${duration}</td></tr>\n</table>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Platbu prosím odešlete převodem na účet <strong>${bank}</strong> a uveďte <strong>VS&nbsp;${variableSymbol}</strong>.</p><p><img src="cid:qrpay" alt="QR platba" style="width:160px;height:160px;border-radius:8px;"/></p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Pokud rezervaci potřebujete zrušit, dejte nám prosím včas vědět na <a href="tel:+420773291941">+420&nbsp;773&nbsp;291&nbsp;941</a> nebo napište na <a href="mailto:info@rybysemin.cz">info@rybysemin.cz</a>. Tento email je generovaný automaticky, neodpovídejte na něj.</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Těšíme se na vás.<br><strong>Lovu zdar!</strong></p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Tým&nbsp;Sportovní&nbsp;Rybolov&nbsp;Semín</p>`
+  let htmlBody = `\n<style>\n  .rs-table td{padding:4px 8px;}\n  .rs-label{font-weight:600;color:#003366;}\n</style>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Dobrý den <strong>${customerName}</strong>,</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">děkujeme za vaši rezervaci lovného místa. Posíláme shrnutí a informace k platbě:</p>\n<table class="rs-table" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:15px;">\n  <tr><td class="rs-label">📅 Datum:</td><td>${dateRange}</td></tr>\n  <tr><td class="rs-label">🕒 Začátek:</td><td>${startLabel}</td></tr>\n  <tr><td class="rs-label">🎣 Lovné místo:</td><td>${spotLabel}</td></tr>\n  <tr><td class="rs-label">📏 Délka pobytu:</td><td>${duration}</td></tr>\n</table>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Platbu prosím odešlete převodem na účet <strong>${bank}</strong> a uveďte <strong>VS&nbsp;${variableSymbol}</strong>.</p>`
 
   let attachments: any[] = []
   try {
@@ -104,6 +105,15 @@ export async function sendReservationConfirmation(reservation: any) {
   } catch(e) {
     console.error('QR generation failed', e)
   }
+
+  // If QR code was successfully generated, embed the image into the HTML
+  if (attachments.length > 0) {
+    htmlBody += `<p><img src="cid:qrpay" alt="QR platba" style="width:160px;height:160px;border-radius:8px;"/></p>`
+  }
+
+  htmlBody += `<p style="font-family:Arial,sans-serif;font-size:15px;">Pokud rezervaci potřebujete zrušit, dejte nám prosím včas vědět na <a href="tel:+420773291941">+420&nbsp;773&nbsp;291&nbsp;941</a> nebo napište na <a href="mailto:info@rybysemin.cz">info@rybysemin.cz</a>. Tento email je generovaný automaticky, neodpovídejte na něj.</p>`
+  htmlBody += `<p style="font-family:Arial,sans-serif;font-size:15px;">Těšíme se na vás.<br><strong>Lovu zdar!</strong></p>`
+  htmlBody += `<p style="font-family:Arial,sans-serif;font-size:15px;">Tým&nbsp;Sportovní&nbsp;Rybolov&nbsp;Semín</p>`
 
   try {
     await transporter.sendMail({
@@ -144,7 +154,7 @@ export async function sendCompetitionConfirmation(registration: any) {
   const rentedGearNames: string[] = rentedGear ? getGearNames(rentedGear) : []
   const gearListStr = rentedGearNames.length ? rentedGearNames.join(', ') : ''
 
-  const bank = process.env.BANK_ACCOUNT ?? '<doplníme>'
+  const bank = process.env.BANK_ACCOUNT ?? `${DEFAULT_BANK_ACCOUNT.accountNumber}/${DEFAULT_BANK_ACCOUNT.bankCode}`
 
   const subject = `🎣 Potvrzení registrace – ${compName}`
 

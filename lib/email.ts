@@ -89,7 +89,7 @@ export async function sendReservationConfirmation(reservation: any) {
     `Těšíme se na vás.<br><strong>Lovu zdar!</strong>\n\n`+
     `Tým Sportovní Rybolov Semín`;
 
-  let htmlBody = `\n<style>\n  .rs-table td{padding:4px 8px;}\n  .rs-label{font-weight:600;color:#003366;}\n</style>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Dobrý den <strong>${customerName}</strong>,</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">děkujeme za vaši rezervaci lovného místa. Posíláme shrnutí a informace k platbě:</p>\n<table class="rs-table" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:15px;">\n  <tr><td class="rs-label">📅 Datum:</td><td>${dateRange}</td></tr>\n  <tr><td class="rs-label">🕒 Začátek:</td><td>${startLabel}</td></tr>\n  <tr><td class="rs-label">🎣 Lovné místo:</td><td>${spotLabel}</td></tr>\n  <tr><td class="rs-label">📏 Délka pobytu:</td><td>${duration}</td></tr>\n</table>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Platbu prosím odešlete převodem na účet <strong>${bank}</strong> a uveďte <strong>VS&nbsp;${variableSymbol}</strong>.</p>`
+  let htmlBody = `\n<style>\n  .rs-table td{padding:4px 8px;}\n  .rs-label{font-weight:600;color:#003366;}\n</style>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Dobrý den <strong>${customerName}</strong>,</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">děkujeme za vaši rezervaci lovného místa. Posíláme shrnutí a informace k platbě:</p>\n<table class="rs-table" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:15px;">\n  <tr><td class="rs-label">📅 Datum:</td><td>${dateRange}</td></tr>\n  <tr><td class="rs-label">🕒 Začátek:</td><td>${startLabel}</td></tr>\n  <tr><td class="rs-label">🎣 Lovné místo:</td><td>${spotLabel}</td></tr>\n  <tr><td class="rs-label">📏 Délka pobytu:</td><td>${duration}</td></tr>\n  <tr><td class="rs-label">✅ Cena:</td><td>${totalPrice} Kč${gearListStr ? ` (včetně vybavení: ${gearListStr})` : ''}</td></tr>\n</table>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Platbu prosím odešlete převodem na účet <strong>${bank}</strong> a uveďte <strong>VS&nbsp;${variableSymbol}</strong>.</p>`
 
   let attachments: any[] = []
   try {
@@ -172,7 +172,7 @@ export async function sendCompetitionConfirmation(registration: any) {
     `Těšíme se na vás.\nLovu zdar!\n\n`+
     `Tým Sportovní Rybolov Semín`
 
-  let htmlBody = `\n<style>\n  .rs-table td{padding:4px 8px;}\n  .rs-label{font-weight:600;color:#003366;}\n</style>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Dobrý den <strong>${customerName}</strong>,</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">děkujeme za vaši registraci do závodu. Posíláme shrnutí a informace k platbě:</p>\n<table class="rs-table" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:15px;">\n  <tr><td class="rs-label">🏆 Závod:</td><td>${compName}</td></tr>\n  <tr><td class="rs-label">📅 Datum:</td><td>${dateRange}</td></tr>\n  <tr><td class="rs-label">🕒 Start:</td><td>${startLabel}</td></tr>\n  <tr><td class="rs-label">💰 Cena:</td><td>${totalPrice} Kč${gearListStr ? ` (včetně vybavení: ${gearListStr})` : ''}</td></tr>\n</table>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Platbu prosím odešlete převodem na účet <strong>${bank}</strong> a uveďte <strong>VS&nbsp;${variableSymbol}</strong>.</p>`
+  let htmlBody = `\n<style>\n  .rs-table td{padding:4px 8px;}\n  .rs-label{font-weight:600;color:#003366;}\n</style>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Dobrý den <strong>${customerName}</strong>,</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">děkujeme za vaši registraci do závodu. Posíláme shrnutí a informace k platbě:</p>\n<table class="rs-table" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:15px;">\n  <tr><td class="rs-label">🏆 Závod:</td><td>${compName}</td></tr>\n  <tr><td class="rs-label">📅 Datum:</td><td>${dateRange}</td></tr>\n  <tr><td class="rs-label">🕒 Start:</td><td>${startLabel}</td></tr>\n  <tr><td class="rs-label">✅ Cena:</td><td>${totalPrice} Kč${gearListStr ? ` (včetně vybavení: ${gearListStr})` : ''}</td></tr>\n</table>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Platbu prosím odešlete převodem na účet <strong>${bank}</strong> a uveďte <strong>VS&nbsp;${variableSymbol}</strong>.</p>`
 
   // QR
   let attachments: any[] = []
@@ -193,14 +193,18 @@ export async function sendCompetitionConfirmation(registration: any) {
   htmlBody += `<p style="font-family:Arial,sans-serif;font-size:15px;">Těšíme se na vás.<br><strong>Lovu zdar!</strong></p>`
   htmlBody += `<p style="font-family:Arial,sans-serif;font-size:15px;">Tým&nbsp;Sportovní&nbsp;Rybolov&nbsp;Semín</p>`
 
-  await transporter.sendMail({
-    from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',
-    to: customerEmail,
-    subject,
-    text: textBody,
-    html: htmlBody,
-    attachments
-  })
+  try {
+    await transporter.sendMail({
+      from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',
+      to: customerEmail,
+      subject,
+      text: textBody,
+      html: htmlBody,
+      attachments
+    })
+  } catch (err) {
+    console.error('Error sending competition confirmation email:', err)
+  }
 }
 
 // Update default export

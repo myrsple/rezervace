@@ -111,7 +111,12 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
         setRegistrationData(registration)
         setSuccess(true)
       } else {
-        alert('Chyba při registraci na závod')
+        let msg = 'Chyba při registraci na závod'
+        try {
+          const err = await response.json()
+          if (err.error) msg = err.error
+        } catch {}
+        alert(msg)
       }
     } catch (error) {
       console.error('Error:', error)

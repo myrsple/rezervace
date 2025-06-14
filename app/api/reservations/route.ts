@@ -93,39 +93,50 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate end date based on duration
+    // Calculate start & end dates in a way that is independent of the server's time-zone.
+    // The incoming ISO string encodes midnight in Czech local time (because the
+    // browser converted the user-selected calendar day to UTC).  Adding hour
+    // offsets instead of using setHours() preserves the intended local times no
+    // matter whether the server runs in UTC or another TZ.
+
     let endDate: Date
+
+    const add = (h: number) => addHours(startDateTime, h)
+
     switch (duration) {
       case 'day':
-        // Single day booking: same day but different end time
-        endDate = new Date(startDateTime)
-        endDate.setHours(22, 0, 0, 0) // 10 PM
-        startDateTime.setHours(6, 0, 0, 0) // 6 AM
+        // 06:00 – 22:00 of the chosen day (16-hour window)
+        const dayStart = add(6)
+        const dayEnd   = add(22)
+        startDateTime.setTime(dayStart.getTime())
+        endDate = dayEnd
         break
       case '24h':
-        // 24-hour reservations start at noon and now finish at 10:00 next day (22 h span)
-        startDateTime.setHours(12, 0, 0, 0) // 12:00
-        endDate = addHours(startDateTime, 22) // 10:00 following day
+        // 12:00 day 0 → 10:00 day 1  (22 h span)
+        const h24Start = add(12)
+        startDateTime.setTime(h24Start.getTime())
+        endDate = addHours(h24Start, 22)
         break
       case '48h':
-        // 48-hour reservations: noon start, 10:00 two days later (46 h span)
-        startDateTime.setHours(12, 0, 0, 0)
-        endDate = addHours(startDateTime, 46)
+        // 12:00 day 0 → 10:00 day 2  (46 h span)
+        const h48Start = add(12)
+        startDateTime.setTime(h48Start.getTime())
+        endDate = addHours(h48Start, 46)
         break
       case '72h':
-        // 72-hour reservations: noon start, 10:00 three days later (70 h span)
-        startDateTime.setHours(12,0,0,0)
-        endDate = addHours(startDateTime,70)
+        // 12:00 day 0 → 10:00 day 3  (70 h span)
+        const h72Start = add(12)
+        startDateTime.setTime(h72Start.getTime())
+        endDate = addHours(h72Start, 70)
         break
       case '96h':
-        startDateTime.setHours(12,0,0,0)
-        endDate = addHours(startDateTime,94)
+        // 12:00 day 0 → 10:00 day 4  (94 h span)
+        const h96Start = add(12)
+        startDateTime.setTime(h96Start.getTime())
+        endDate = addHours(h96Start, 94)
         break
       default:
-        return NextResponse.json(
-          { error: 'Neplatná délka rezervace' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Neplatná délka rezervace' }, { status: 400 })
     }
 
     // Check for conflicts – treat endDate as exclusive (switch-over at noon)

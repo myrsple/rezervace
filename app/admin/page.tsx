@@ -150,7 +150,9 @@ export default function AdminDashboard() {
       })
 
       if (response.ok) {
-        await fetchData() // Refresh data
+        // Optimistically update local state so UI reflects the change instantly
+        setFishingSpots(prev => prev.map(s => s.id === spotId ? { ...s, isActive } : s))
+        await fetchData() // Then refresh to ensure we have server-truth
         showFeedback('success', `Lovné místo bylo ${isActive ? 'aktivováno' : 'deaktivováno'}`)
       } else {
         const error = await response.json()

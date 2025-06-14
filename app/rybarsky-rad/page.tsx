@@ -45,7 +45,7 @@ export default function FishingRulesPage() {
               Pletená šňůra je zakázána!
             </RuleRow>
             <RuleRow>
-              Denní doba lovu: 8:00&nbsp;– 20:00 (případně dle zakoupeného tarifu – viz
+              Denní doba lovu: 8:00&nbsp;– 22:00 (případně dle zakoupeného tarifu – viz
               ceník).
             </RuleRow>
             <RuleRow>
@@ -64,7 +64,7 @@ export default function FishingRulesPage() {
               při&nbsp;potřebě zapůjčíme.
             </RuleRow>
             <RuleRow>
-              Při focení rybu vždy držte nízko nad podložkou a&nbsp;maximálně pár vteřin mimo vodu.
+              Při focení rybu vždy držte nízko nad podložkou a pouze po dobu nezbytně nutnou. Zákaz focení vestoje!
             </RuleRow>
             <RuleRow>
               Odpadky si každý lovec odnáší&nbsp;sebou; na&nbsp;břehu chceme pořádek.

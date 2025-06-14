@@ -3,12 +3,13 @@ import { verify } from '@/lib/jwt'
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  // protect admin dashboard and API routes starting with /api/* if needed
+  // Protect admin dashboard; redirect to login if unauthenticated
   if (pathname.startsWith('/admin')) {
     const token = req.cookies.get('adminAuth')?.value
     const secret = process.env.ADMIN_JWT_SECRET!
-    if (!token || !(await verify(token, secret))) {
-      return NextResponse.rewrite(new URL('/404', req.url))
+    const valid = token && await verify(token, secret)
+    if (!valid) {
+      return NextResponse.redirect(new URL('/admin-login', req.url))
     }
   }
   return NextResponse.next()

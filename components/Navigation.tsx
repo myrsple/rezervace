@@ -12,7 +12,7 @@ export default function Navigation() {
   const [isAuth, setIsAuth] = useState(false)
 
   useEffect(() => {
-    setIsAuth(document.cookie.includes('adminAuth=1'))
+    setIsAuth(document.cookie.includes('adminAuthClient=1'))
   }, [pathname, showLogin])
 
   const links = [
@@ -40,7 +40,7 @@ export default function Navigation() {
 
           {/* Desktop links */}
           <div className="hidden lg:flex items-center w-full">
-            {/* Rezervovat left */}
+            {/* Rezervovat link */}
             {(() => {
               const href = '/'
               const label = 'Rezervovat'
@@ -50,7 +50,17 @@ export default function Navigation() {
               return <Link href={href} className={className}>{label}</Link>
             })()}
 
-            {/* other links right */}
+            {/* Admin link right next to Rezervovat */}
+            {isAuth && (() => {
+              const href = '/admin'
+              const label = 'Administrace'
+              const isActive = pathname === href
+              const base = 'ml-4 px-4 py-2 rounded-xl text-base font-medium transition-all duration-200'
+              const className = isActive ? `${base} bg-semin-blue text-white shadow-card` : `${base} text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue`
+              return <Link href={href} className={className}>{label}</Link>
+            })()}
+
+            {/* other links pushed to the far right */}
             <div className="ml-auto flex space-x-4">
               {links.filter(l => !['/admin','/'].includes(l.href)).map(({ href, label }) => {
                 const isActive = pathname === href
@@ -60,20 +70,6 @@ export default function Navigation() {
               })}
             </div>
           </div>
-
-          {/* Admin link on desktop */}
-          {isAuth && (
-            <Link
-              href="/admin"
-              className={`hidden lg:block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 ml-auto ${
-                pathname === '/admin'
-                  ? 'bg-semin-blue text-white shadow-card'
-                  : 'text-semin-gray hover:text-semin-blue hover:bg-semin-light-blue'
-              }`}
-            >
-              Administrace
-            </Link>
-          )}
 
           {/* Hamburger for mobile */}
           <button

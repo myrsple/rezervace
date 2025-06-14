@@ -24,7 +24,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <div className="min-h-screen bg-gradient-to-br from-semin-light-blue to-semin-light-gray">
           <header className="bg-white">
-            <div className="max-w-7xl mx-auto px-4 pt-3 pb-0 flex justify-center">
+            <div className="max-w-7xl mx-auto px-4 pt-3 pb-2.5 flex justify-center">
               <img
                 src="/logo-ryby.jpg"
                 alt="Ryby Semín – logo"

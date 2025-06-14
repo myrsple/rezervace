@@ -42,7 +42,10 @@ export async function POST(req: NextRequest) {
       const secret = process.env.ADMIN_JWT_SECRET!
       const token = await sign({ user: username, exp: Math.floor(Date.now()/1000) + 60*60*24*14 }, secret)
       const res = NextResponse.json({ success: true })
+      // Server-only JWT cookie
       res.cookies.set('adminAuth', token, { httpOnly: true, secure: process.env.NODE_ENV==='production', path: '/', sameSite: 'lax', maxAge: 60*60*24*14 })
+      // Lightweight client-visible flag so React can detect auth without accessing the JWT
+      res.cookies.set('adminAuthClient', '1', { httpOnly: false, secure: process.env.NODE_ENV==='production', path: '/', sameSite: 'lax', maxAge: 60*60*24*14 })
       return res
     }
 

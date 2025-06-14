@@ -6,6 +6,7 @@ import { Reservation, FishingSpot, Competition, CompetitionRegistration } from '
 import { format, addHours } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import { getGearNames } from '@/lib/gear-config'
+import AdminLoginForm from '@/components/AdminLoginForm'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -45,17 +46,16 @@ export default function AdminDashboard() {
     customerName: ''
   })
 
-  // no client auth guard; server middleware handles
-
+  // Fetch data on mount
   useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    const minSpinnerTime = new Promise((resolve) => setTimeout(resolve, 1000));
-    const fetchPromise = fetchData();
+    let isMounted = true
+    setLoading(true)
+    const minSpinnerTime = new Promise(res => setTimeout(res, 1000))
+    const fetchPromise = fetchData()
     Promise.all([minSpinnerTime, fetchPromise]).then(() => {
-      if (isMounted) setLoading(false);
-    });
-    return () => { isMounted = false; };
+      if (isMounted) setLoading(false)
+    })
+    return () => { isMounted = false }
   }, [])
 
   const fetchData = async () => {
@@ -155,8 +155,14 @@ export default function AdminDashboard() {
         await fetchData() // Then refresh to ensure we have server-truth
         showFeedback('success', `Lovné místo bylo ${isActive ? 'aktivováno' : 'deaktivováno'}`)
       } else {
-        const error = await response.json()
-        showFeedback('error', `Chyba při změně stavu lovného místa: ${error.message || 'Neznámá chyba'}`)
+        const errorData = await response.json()
+        // Prefer message, then generic error field, finally fallback text
+        const errMsg = errorData.message || errorData.error || 'Neznámá chyba'
+        // Translate specific known message
+        const finalMsg = errMsg.includes('active reservation') || errMsg.includes('aktivní rezervace')
+          ? 'Lovné místo má rezervace. Pro deaktivaci je nejdřív zrušte.'
+          : errMsg
+        showFeedback('error', `Chyba při změně stavu lovného místa: ${finalMsg}`)
       }
     } catch (error) {
       console.error('Error updating spot status:', error)
@@ -191,7 +197,7 @@ export default function AdminDashboard() {
 
   const showFeedback = (type: 'success' | 'error', message: string) => {
     setFeedback({ type, message })
-    setTimeout(() => setFeedback(null), 3000) // Hide after 3 seconds
+    setTimeout(() => setFeedback(null), 6000) // Hide after 6 seconds
   }
 
   const createCompetition = async () => {
@@ -643,17 +649,9 @@ export default function AdminDashboard() {
   }
 
   const handleLogout = () => {
-    // clear cookie
-    document.cookie = 'adminAuth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-    router.push('/')
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-semin-blue"></div>
-      </div>
-    )
+    fetch('/api/admin-logout', { method: 'POST' }).finally(() => {
+      router.push('/')
+    })
   }
 
   return (

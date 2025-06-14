@@ -24,7 +24,8 @@ export default function AdminLoginForm() {
       if (!res.ok) {
         throw new Error('Neplatné přihlašovací údaje')
       }
-      router.push('/admin')
+      // Force full-page navigation so that new HttpOnly cookie is available to server
+      window.location.assign('/admin')
     } catch (err: any) {
       setError(err.message || 'Chyba')
     } finally {

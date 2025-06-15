@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
 import { addDays, addHours } from 'date-fns'
-import { sendReservationConfirmation } from '../../../lib/email'
+import { sendReservationConfirmation, sendReservationAdminNotification } from '../../../lib/email'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Pagination parameters (optional)
+    const { searchParams } = new URL(request.url)
+    const limitParam = searchParams.get('limit')
+    const skipParam  = searchParams.get('skip')
+
+    const take = limitParam ? parseInt(limitParam, 10) : undefined
+    const skip = skipParam  ? parseInt(skipParam, 10)  : undefined
+
     const reservations = await prisma.reservation.findMany({
       include: {
         fishingSpot: true
       },
-      orderBy: { startDate: 'asc' }
+      orderBy: { startDate: 'asc' },
+      take: isNaN(Number(take)) ? undefined : take,
+      skip: isNaN(Number(skip)) ? undefined : skip
     })
     
     return NextResponse.json(reservations)
@@ -195,6 +205,8 @@ export async function POST(request: NextRequest) {
       // Send confirmation email **before** responding so that the function runtime stays alive
       try {
         await sendReservationConfirmation(reservation)
+        // Notify admin (fire-and-forget to avoid delaying user)
+        sendReservationAdminNotification(reservation).catch(err => console.error('Failed to send admin notify', err))
       } catch (emailErr) {
         console.error('Failed to send confirmation email', emailErr)
       }

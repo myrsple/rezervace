@@ -36,7 +36,8 @@ export default function AdminDashboard() {
     create: false,
     delete: false,
     update: false,
-    toggle: new Set<number>()
+    toggle: new Set<number>(),
+    complete: new Set<number>()
   })
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [competitionSortConfigs, setCompetitionSortConfigs] = useState<Record<number, { key: string; direction: 'asc' | 'desc' }>>({})
@@ -45,6 +46,12 @@ export default function AdminDashboard() {
     registrationId: '',
     customerName: ''
   })
+
+  // Pagination for reservations ------------------------------------------------
+  const PAGE_SIZE = 30
+  const [reservationPage, setReservationPage] = useState(0) // number of pages already loaded
+  const [hasMoreReservations, setHasMoreReservations] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   // Fetch data on mount
   useEffect(() => {
@@ -62,7 +69,7 @@ export default function AdminDashboard() {
     try {
       setLoading(true)
       const [reservationsRes, spotsRes, competitionsRes] = await Promise.all([
-        fetch('/api/reservations'),
+        fetch(`/api/reservations?limit=${PAGE_SIZE}&skip=0`),
         fetch('/api/fishing-spots'),
         fetch('/api/competitions')
       ])
@@ -123,6 +130,9 @@ export default function AdminDashboard() {
         })
         return updated
       })
+
+      setReservationPage(1)
+      setHasMoreReservations(reservationsData.length === PAGE_SIZE)
     } catch (error) {
       console.error('Error fetching data:', error)
       showFeedback('error', 'Nepodařilo se načíst data')
@@ -654,6 +664,68 @@ export default function AdminDashboard() {
     })
   }
 
+  // Manually mark competition as completed
+  const completeCompetition = async (competition: Competition) => {
+    if (operationLoading.complete.has(competition.id)) return
+
+    const confirmMsg = `Opravdu chcete přesunout závod "${competition.name}" do dokončených? Tuto akci nelze vrátit.`
+    if (!window.confirm(confirmMsg)) return
+
+    setOperationLoading(prev => ({
+      ...prev,
+      complete: new Set(prev.complete).add(competition.id)
+    }))
+
+    // Set endDate so that isCompetitionCompleted() immediately returns true (end +48h < now)
+    const pastEnd = new Date(Date.now() - 49 * 60 * 60 * 1000) // 49 h ago
+
+    try {
+      const res = await fetch(`/api/competitions/${competition.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endDate: pastEnd.toISOString() })
+      })
+      if (res.ok) {
+        await fetchData()
+        showFeedback('success', 'Závod byl označen jako dokončený')
+      } else {
+        const err = await res.json()
+        showFeedback('error', `Chyba při dokončení závodu: ${err.message || 'Neznámá chyba'}`)
+      }
+    } catch (error) {
+      console.error('Complete competition error', error)
+      showFeedback('error', 'Chyba při dokončení závodu')
+    } finally {
+      setOperationLoading(prev => {
+        const newSet = new Set(prev.complete)
+        newSet.delete(competition.id)
+        return { ...prev, complete: newSet }
+      })
+    }
+  }
+
+  // Load next page of reservations -------------------------------------------
+  const loadMoreReservations = async () => {
+    if (!hasMoreReservations || loadingMore) return
+    setLoadingMore(true)
+    const skip = reservationPage * PAGE_SIZE
+    try {
+      const res = await fetch(`/api/reservations?limit=${PAGE_SIZE}&skip=${skip}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          setReservations(prev => [...prev, ...data])
+          setReservationPage(prev => prev + 1)
+          if (data.length < PAGE_SIZE) setHasMoreReservations(false)
+        }
+      }
+    } catch (err) {
+      console.error('Error loading more reservations', err)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow">
@@ -893,16 +965,32 @@ export default function AdminDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => openDeleteConfirmation(reservation.id, reservation.customerName)}
-                          className="inline-flex items-center px-2 py-1 border border-red-300 rounded text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-                          title="Smazat rezervaci"
+                          disabled={operationLoading.delete}
+                          className="p-2 rounded hover:bg-gray-100 text-red-600 disabled:opacity-50"
+                          title="Smazat rezervaci" aria-label="Smazat rezervaci"
                         >
-                          🗑️
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-7-4V3a2 2 0 00-2-2h-4a2 2 0 00-2 2v4" />
+                          </svg>
                         </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
+              {/* Load more button */}
+              {hasMoreReservations && (
+                <div className="flex justify-center py-4">
+                  <button
+                    onClick={loadMoreReservations}
+                    disabled={loadingMore}
+                    className="px-4 py-2 bg-semin-blue text-white rounded-lg hover:bg-semin-blue/90 disabled:opacity-50"
+                  >
+                    {loadingMore ? 'Načítám…' : 'Načíst další'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -958,17 +1046,17 @@ export default function AdminDashboard() {
                     <div className="border-t border-gray-100 pt-3">
                       <h4 className="text-sm font-medium text-gray-700 mb-2">Příští rezervace:</h4>
                       {nextReservation ? (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex flex-col gap-1">
-                          <div className="text-base font-semibold text-green-900">{nextReservation.customerName}</div>
-                          <div className="text-lg font-bold text-green-800">
+                        <div className={`rounded-lg p-3 flex flex-col gap-1 ${nextReservation.isPaid ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                          <div className={`text-base font-semibold ${nextReservation.isPaid ? 'text-green-900' : 'text-yellow-900'}`}>{nextReservation.customerName}</div>
+                          <div className={`text-lg font-bold ${nextReservation.isPaid ? 'text-green-800' : 'text-yellow-800'}`}>
                             {format(new Date(nextReservation.startDate), 'd.M.yyyy HH:mm', { locale: cs })}
                           </div>
-                          <div className="text-xs text-green-700">
+                          <div className={`text-xs ${nextReservation.isPaid ? 'text-green-700' : 'text-yellow-700'}`}>
                             {nextReservation.duration === 'day' ? 'Jeden den' :
                              nextReservation.duration === '24h' ? '24 hodin' : '48 hodin'}
                           </div>
-                          <div className="text-xs text-green-700">{nextReservation.customerEmail} | {nextReservation.customerPhone}</div>
-                          <div className={`text-xs font-semibold mt-1 ${nextReservation.isPaid ? 'text-green-700' : 'text-red-600'}`}
+                          <div className={`text-xs ${nextReservation.isPaid ? 'text-green-700' : 'text-yellow-700'}`}>{nextReservation.customerEmail} | {nextReservation.customerPhone}</div>
+                          <div className={`text-xs font-semibold mt-1 ${nextReservation.isPaid ? 'text-green-700' : 'text-yellow-700'}`}
                             >{nextReservation.isPaid ? 'Zaplaceno' : 'Nezaplaceno'}</div>
                         </div>
                       ) : (
@@ -1097,6 +1185,7 @@ export default function AdminDashboard() {
                             </div>
                             <div>Kapacita: {competition.registrations?.length || 0} / {competition.capacity} účastníků</div>
                             <div>Vstupné: {competition.entryFee} Kč</div>
+                            <div className="font-semibold">Tržby: {competition.registrations?.reduce((sum,r)=>sum + (r.totalPrice||0),0)} Kč</div>
                           </div>
                         </div>
                         <div className="flex items-center space-x-4">
@@ -1115,7 +1204,7 @@ export default function AdminDashboard() {
 
                           {/* Active toggle */}
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-600 select-none">{competition.isActive ? 'Aktivní' : 'Neaktivní'}</span>
+                            <span className="text-sm text-gray-600 select-none">{competition.isActive ? 'Viditelný' : 'Skrytý'}</span>
                             <button
                               onClick={() => toggleCompetitionStatus(competition.id, !competition.isActive)}
                               disabled={operationLoading.toggle.has(competition.id)}
@@ -1139,16 +1228,34 @@ export default function AdminDashboard() {
                             </button>
                           </div>
 
+                          {/* Complete icon */}
+                          <button
+                            onClick={() => completeCompetition(competition)}
+                            disabled={operationLoading.complete.has(competition.id) || operationLoading.toggle.has(competition.id)}
+                            className="p-2 rounded hover:bg-gray-100 text-green-600 disabled:opacity-50"
+                            title="Dokončit" aria-label="Dokončit"
+                          >
+                            {operationLoading.complete.has(competition.id) ? (
+                              <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+
                           {/* Delete icon */}
                           <button
                             onClick={() => openDeleteCompetitionConfirmation(competition.id, competition.name)}
-                            disabled={operationLoading.delete || operationLoading.toggle.has(competition.id)}
-                            className="p-2 rounded hover:bg-gray-100 text-red-600 disabled:opacity-50" 
-                            title="Smazat"
-                            aria-label="Smazat"
+                            disabled={operationLoading.delete}
+                            className="p-2 rounded hover:bg-gray-100 text-red-600 disabled:opacity-50"
+                            title="Smazat závod" aria-label="Smazat závod"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-7-4V3a2 2 0 00-2-2h-4a2 2 0 00-2 2v4" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-7-4V3a2 2 0 00-2-2h-4a2 2 0 00-2 2v4" />
                             </svg>
                           </button>
                         </div>
@@ -1173,15 +1280,28 @@ export default function AdminDashboard() {
                         <div className="border-t pt-4">
                           <div className="flex justify-between items-center mb-3">
                             <h5 className="text-sm font-medium text-gray-700">Registrovaní účastníci</h5>
-                            <button
-                              onClick={() => downloadCompetitionCSV(competition)}
-                              className="flex items-center space-x-1 px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                              <span>CSV</span>
-                            </button>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => downloadCompetitionCSV(competition)}
+                                className="flex items-center space-x-1 px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>CSV</span>
+                              </button>
+                              {isCompetitionCompleted(competition) && (
+                                <button
+                                  onClick={() => openDeleteCompetitionConfirmation(competition.id, competition.name)}
+                                  className="p-2 rounded hover:bg-gray-100 text-red-600"
+                                  title="Smazat závod" aria-label="Smazat závod"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-7-4V3a2 2 0 00-2-2h-4a2 2 0 00-2 2v4" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200 admin-table">
@@ -1296,10 +1416,12 @@ export default function AdminDashboard() {
                                     <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">
                                       <button
                                         onClick={() => openDeleteRegistrationConfirmation(registration.id, registration.customerName)}
-                                        className="inline-flex items-center px-2 py-1 border border-red-300 rounded text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-                                        title="Smazat registraci"
+                                        className="p-2 rounded hover:bg-gray-100 text-red-600"
+                                        title="Smazat registraci" aria-label="Smazat registraci"
                                       >
-                                        🗑️
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-7-4V3a2 2 0 00-2-2h-4a2 2 0 00-2 2v4" />
+                                        </svg>
                                       </button>
                                     </td>
                                   </tr>
@@ -1345,6 +1467,7 @@ export default function AdminDashboard() {
                             </div>
                             <div>Počet účastníků: {competition.registrations?.length || 0} / {competition.capacity}</div>
                             <div>Vstupné: {competition.entryFee} Kč</div>
+                            <div className="font-semibold">Tržby: {competition.registrations?.reduce((sum,r)=>sum + (r.totalPrice||0),0)} Kč</div>
                           </div>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-1 sm:space-y-0 text-right sm:text-left">
@@ -1360,13 +1483,22 @@ export default function AdminDashboard() {
                             </svg>
                             <span>CSV</span>
                           </button>
+                          <button
+                            onClick={() => openDeleteCompetitionConfirmation(competition.id, competition.name)}
+                            className="p-2 rounded hover:bg-gray-100 text-red-600"
+                            title="Smazat závod" aria-label="Smazat závod"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-7-4V3a2 2 0 00-2-2h-4a2 2 0 00-2 2v4" />
+                            </svg>
+                          </button>
                         </div>
                       </div>
 
                       {/* Final Results Table */}
                       {competition.registrations && competition.registrations.length > 0 && (
                         <div className="border-t pt-4">
-                          <h5 className="text-sm font-medium text-gray-700 mb-3">Finální výsledky</h5>
+                          <h5 className="text-sm font-medium text-gray-700 mb-3">Shrnutí</h5>
                           <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200 admin-table">
                               <thead className="bg-gray-100">
@@ -1480,10 +1612,12 @@ export default function AdminDashboard() {
                                     <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">
                                       <button
                                         onClick={() => openDeleteRegistrationConfirmation(registration.id, registration.customerName)}
-                                        className="inline-flex items-center px-2 py-1 border border-red-300 rounded text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-                                        title="Smazat registraci"
+                                        className="p-2 rounded hover:bg-gray-100 text-red-600"
+                                        title="Smazat registraci" aria-label="Smazat registraci"
                                       >
-                                        🗑️
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-7-4V3a2 2 0 00-2-2h-4a2 2 0 00-2 2v4" />
+                                        </svg>
                                       </button>
                                     </td>
                                   </tr>

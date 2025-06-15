@@ -16,14 +16,14 @@ interface PriceItem {
 }
 
 const prices: PriceItem[] = [
-  { name: 'Denní rybolov (8:00 – 20:00)', price: '200 Kč' },
-  { name: 'Rybolov 24 h (12:00 – 12:00 následujícího dne)', price: '350 Kč' },
-  { name: 'Víkend (pá 12:00 – ne 12:00)', price: '600 Kč' },
+  { name: 'Denní rybolov (8:00 – 22:00)', price: '200 Kč' },
+  { name: 'Rybolov 24h (12:00 – 12:00 následujícího dne)', price: '350 Kč' },
+  { name: 'Rybolov 48h (12:00 – 12:00 následujícího dne)', price: '600 Kč' },
   { name: 'VIP chata pro dva rybáře (pá 12:00 – ne 12:00)', price: '2 000 Kč' },
   { name: 'Zapůjčení podložky pod ryby', note: 'kauce 500 Kč', price: '50 Kč' },
   { name: 'Zapůjčení podběráku', note: 'kauce 300 Kč', price: '50 Kč' },
-  { name: 'Zapůjčení vidliček', price: '20 Kč' },
-  { name: 'Zapůjčení signalizátorů záběru', note: 'kauce 150 Kč / ks', price: '50 Kč' },
+  { name: 'Zapůjčení vidliček', price: '50 Kč' },
+  { name: 'Zapůjčení signalizátorů záběru', note: 'kauce 500 Kč / ks', price: '100 Kč' },
   { name: 'Zapůjčení prutů, prodej nástrah a návnad', price: 'dle aktuální nabídky' },
 ]
 

@@ -230,5 +230,122 @@ export async function sendCompetitionConfirmation(registration: any) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Admin notifications
+// ---------------------------------------------------------------------------
+
+const ADMIN_FALLBACK_EMAIL = 'tomas.kovarik11@gmail.com'
+
+/**
+ * Notifies admin about a new fishing spot reservation.
+ */
+export async function sendReservationAdminNotification(reservation: any) {
+  const transporter = await getTransporter()
+  if (!transporter) return
+
+  const {
+    customerName,
+    customerEmail,
+    customerPhone,
+    fishingSpot,
+    startDate,
+    endDate,
+    duration,
+    totalPrice,
+    variableSymbol
+  } = reservation as any
+
+  const spotLabel = (fishingSpot?.name ?? '').includes('VIP') || fishingSpot?.number === 99 ? 'VIP' : fishingSpot?.number
+  const dateRange = `${format(new Date(startDate),'d.M.yyyy',{locale:cs})} – ${format(new Date(endDate),'d.M.yyyy',{locale:cs})}`
+
+  const subject = 'Nová rezervace lovného místa'
+
+  const html = `
+    <h2>Nová rezervace</h2>
+    <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
+      <tr><td><strong>Jméno</strong></td><td>${customerName}</td></tr>
+      <tr><td><strong>E-mail</strong></td><td>${customerEmail}</td></tr>
+      <tr><td><strong>Telefon</strong></td><td>${customerPhone}</td></tr>
+      <tr><td><strong>Lovné místo</strong></td><td>${spotLabel}</td></tr>
+      <tr><td><strong>Datum</strong></td><td>${dateRange}</td></tr>
+      <tr><td><strong>Délka</strong></td><td>${duration}</td></tr>
+      <tr><td><strong>Cena</strong></td><td>${totalPrice} Kč</td></tr>
+      ${variableSymbol ? `<tr><td><strong>VS</strong></td><td>${variableSymbol}</td></tr>` : ''}
+    </table>
+  `
+
+  const text = `Nová rezervace\n\n`+
+    `Jméno: ${customerName}\n`+
+    `E-mail: ${customerEmail}\n`+
+    `Telefon: ${customerPhone}\n`+
+    `Lovné místo: ${spotLabel}\n`+
+    `Datum: ${dateRange}\n`+
+    `Délka: ${duration}\n`+
+    `Cena: ${totalPrice} Kč\n`+
+    (variableSymbol ? `VS: ${variableSymbol}\n` : '')
+
+  await transporter.sendMail({
+    from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',
+    to: process.env.ADMIN_EMAIL || ADMIN_FALLBACK_EMAIL,
+    subject,
+    text,
+    html
+  })
+}
+
+/**
+ * Notifies admin about a new competition registration.
+ */
+export async function sendCompetitionAdminNotification(registration: any) {
+  const transporter = await getTransporter()
+  if (!transporter) return
+
+  const {
+    customerName,
+    customerEmail,
+    customerPhone,
+    totalPrice,
+    competition
+  } = registration as any
+
+  const compName = competition?.name ?? 'Závod'
+  const dateStr  = format(new Date(competition?.date), 'd.M.yyyy', { locale: cs })
+
+  const subject = `Nová registrace do závodu ${compName}`
+
+  const html = `
+    <h2>Nová registrace do závodu</h2>
+    <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
+      <tr><td><strong>Závod</strong></td><td>${compName}</td></tr>
+      <tr><td><strong>Datum</strong></td><td>${dateStr}</td></tr>
+      <tr><td><strong>Jméno</strong></td><td>${customerName}</td></tr>
+      <tr><td><strong>E-mail</strong></td><td>${customerEmail}</td></tr>
+      <tr><td><strong>Telefon</strong></td><td>${customerPhone}</td></tr>
+      <tr><td><strong>Cena</strong></td><td>${totalPrice} Kč</td></tr>
+    </table>
+  `
+
+  const text = `Nová registrace do závodu\n\n`+
+    `Závod: ${compName}\n`+
+    `Datum: ${dateStr}\n`+
+    `Jméno: ${customerName}\n`+
+    `E-mail: ${customerEmail}\n`+
+    `Telefon: ${customerPhone}\n`+
+    `Cena: ${totalPrice} Kč\n`
+
+  await transporter.sendMail({
+    from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',
+    to: process.env.ADMIN_EMAIL || ADMIN_FALLBACK_EMAIL,
+    subject,
+    text,
+    html
+  })
+}
+
 // Update default export
-export default { sendReservationConfirmation, sendCompetitionConfirmation } 
+export default {
+  sendReservationConfirmation,
+  sendCompetitionConfirmation,
+  sendReservationAdminNotification,
+  sendCompetitionAdminNotification,
+} 

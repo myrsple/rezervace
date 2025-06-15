@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import FacebookFeed from '@/components/FacebookFeed'
 import type { Metadata } from 'next'
 
@@ -40,9 +41,8 @@ export default function AboutPage() {
           <p>
             Historie rybníka sahá do roku&nbsp;1996, kdy začal jeho výstavbu Josef Tomášek se synem
             Josefem. Původní plocha&nbsp;1,5&nbsp;ha se roku&nbsp;2001 rozšířila na dnešních
-            přibližně&nbsp;5&nbsp;ha. Od samého počátku jsme dbali na pozvolné břehy a čistou vodu –
-            nádrž je průtočná a&nbsp;voda se vymění přibližně jednou za&nbsp;14&nbsp;dnů, takže se u
-            nás nevyskytují sinice. Kvalitu pravidelně testujeme a&nbsp;k osvěžení slouží i venkovní sprcha přímo u pláže.
+            přibližně&nbsp;5&nbsp;ha. Od samého počátku zakladatelé dbali na pozvolné břehy a čistou vodu –
+            nádrž je průtočná a&nbsp;voda se vymění přibližně jednou za&nbsp;14&nbsp;dnů. Kvalitu pravidelně testujeme a&nbsp;k osvěžení slouží i venkovní sprcha přímo u pláže.
           </p>
 
           {/* Photo with overlay caption */}
@@ -64,7 +64,7 @@ export default function AboutPage() {
 
           <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Proč se k&nbsp;nám hosté vracejí</h2>
           <p>
-            Kromě bohaté obsádky kaprů, amurů či dravců oceňují naši návštěvníci především klid,
+            Kromě bohaté obsádky kaprů, amurů a dalších ryb oceňují naši návštěvníci především klid,
             čistotu a&nbsp;rodinnou atmosféru. Ať už přijedete na&nbsp;denní rybolov, víkend s
             karavanem, nebo se jen vykoupat, vždycky vás přivítáme s
             úsměvem a&nbsp;rádi poradíme, kde to právě nejlépe bere.
@@ -86,7 +86,9 @@ export default function AboutPage() {
           {/* Rezervace info */}
           <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Rezervace a platby</h2>
           <p>
-            Denní i vícedenní povolenky vyřídíte na stránce Rezervujte nebo osobně přímo na pláži u rybníka Tomášek. Zaplatit můžete hotově nebo QR platbou. Uvedené ceny zahrnují DPH.
+            Denní i&nbsp;vícedenní povolenky vyřídíte na stránce{' '}
+            <Link href="/rezervovat" className="font-semibold text-semin-blue">Rezervovat</Link>{' '}
+            nebo osobně přímo na&nbsp;pláži u&nbsp;rybníka Tomášek. Zaplatit můžete hotově nebo QR&nbsp;platbou. Uvedené ceny zahrnují DPH.
           </p>
 
           <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Firemní akce a školní výlety</h2>

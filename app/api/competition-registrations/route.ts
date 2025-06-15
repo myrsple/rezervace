@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
-import { sendCompetitionConfirmation } from '../../../lib/email'
+import { sendCompetitionConfirmation, sendCompetitionAdminNotification } from '../../../lib/email'
 
 export const runtime = 'nodejs'
 
@@ -117,6 +117,11 @@ export async function POST(request: NextRequest) {
         ...registration,
         competition
       })
+      // notify admin (non-blocking)
+      sendCompetitionAdminNotification({
+        ...registration,
+        competition
+      }).catch(err=>console.error('Admin notify failed',err))
     } catch (emailErr) {
       console.error('Email send failed', emailErr)
     }

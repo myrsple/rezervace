@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
 import { sendCompetitionConfirmation } from '../../../lib/email'
 
+export const runtime = 'nodejs'
+
 // Generate a random 6-digit variable symbol
 function generateVariableSymbol(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -109,11 +111,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Fire-and-forget confirmation email
-    sendCompetitionConfirmation({
-      ...registration,
-      competition
-    }).catch(err=>console.error('Email send failed',err))
+    // Send email now so the function stays alive until finished
+    try {
+      await sendCompetitionConfirmation({
+        ...registration,
+        competition
+      })
+    } catch (emailErr) {
+      console.error('Email send failed', emailErr)
+    }
 
     return NextResponse.json(registration, { status: 201 })
   } catch (error) {

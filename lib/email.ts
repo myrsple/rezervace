@@ -12,24 +12,45 @@ const globalForEmail = globalThis as unknown as {
   mailTransporter?: nodemailer.Transporter
 }
 
-function getTransporter() {
+/**
+ * Lazily create and cache Nodemailer transporter.
+ * – Tries both the SMTP_* and EMAIL_* env-var conventions for flexibility.
+ * – Performs `transporter.verify()` once to fail fast on bad credentials.
+ */
+async function getTransporter() {
   if (globalForEmail.mailTransporter) return globalForEmail.mailTransporter
 
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
-    console.warn('SMTP credentials not found – email sending disabled')
+  const {
+    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS,
+    EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS
+  } = process.env as Record<string, string | undefined>
+
+  const host = SMTP_HOST || EMAIL_HOST
+  const portStr = SMTP_PORT || EMAIL_PORT
+  const user = SMTP_USER || EMAIL_USER
+  const pass = SMTP_PASS || EMAIL_PASS
+
+  if (!host || !portStr || !user || !pass) {
+    console.warn('[email] SMTP credentials not found – email sending disabled')
     return null
   }
 
+  const port = Number(portStr)
   const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465, // true for 465, false for others
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS
-    }
+    host,
+    port,
+    secure: port === 465, // 465 = implicit TLS ; 587 & others use STARTTLS
+    auth: { user, pass }
   })
+
+  try {
+    // Fail fast if credentials are wrong or host unreachable.
+    await transporter.verify()
+    console.info('[email] SMTP connection verified')
+  } catch (err) {
+    console.error('[email] SMTP verification failed – emails disabled', err)
+    return null
+  }
 
   globalForEmail.mailTransporter = transporter
   return transporter
@@ -40,8 +61,8 @@ function getTransporter() {
  * Gracefully no-ops if SMTP is not configured.
  */
 export async function sendReservationConfirmation(reservation: any) {
-  const transporter = getTransporter()
-  if (!transporter) return // SMTP not configured
+  const transporter = await getTransporter()
+  if (!transporter) return // SMTP not configured or verification failed
 
   const {
     customerEmail,
@@ -116,7 +137,7 @@ export async function sendReservationConfirmation(reservation: any) {
   htmlBody += `<p style="font-family:Arial,sans-serif;font-size:15px;">Tým&nbsp;Sportovní&nbsp;Rybolov&nbsp;Semín</p>`
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',
       to: customerEmail,
       subject,
@@ -124,6 +145,7 @@ export async function sendReservationConfirmation(reservation: any) {
       html: htmlBody,
       attachments
     })
+    console.info('[email] Reservation summary sent:', info.messageId)
   } catch (err) {
     console.error('Error sending confirmation email:', err)
   }
@@ -131,7 +153,7 @@ export async function sendReservationConfirmation(reservation: any) {
 
 // Competition confirmation email ---------------------------------------------
 export async function sendCompetitionConfirmation(registration: any) {
-  const transporter = getTransporter()
+  const transporter = await getTransporter()
   if (!transporter) return
 
   const {
@@ -194,7 +216,7 @@ export async function sendCompetitionConfirmation(registration: any) {
   htmlBody += `<p style="font-family:Arial,sans-serif;font-size:15px;">Tým&nbsp;Sportovní&nbsp;Rybolov&nbsp;Semín</p>`
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',
       to: customerEmail,
       subject,
@@ -202,6 +224,7 @@ export async function sendCompetitionConfirmation(registration: any) {
       html: htmlBody,
       attachments
     })
+    console.info('[email] Competition summary sent:', info.messageId)
   } catch (err) {
     console.error('Error sending competition confirmation email:', err)
   }

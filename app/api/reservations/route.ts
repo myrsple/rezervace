@@ -3,6 +3,8 @@ import { prisma } from '../../../lib/prisma'
 import { addDays, addHours } from 'date-fns'
 import { sendReservationConfirmation } from '../../../lib/email'
 
+export const runtime = 'nodejs'
+
 export async function GET() {
   try {
     const reservations = await prisma.reservation.findMany({
@@ -190,8 +192,12 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // Fire-and-forget confirmation email (no blocking)
-      sendReservationConfirmation(reservation).catch(err => console.error('Failed to send confirmation email', err))
+      // Send confirmation email **before** responding so that the function runtime stays alive
+      try {
+        await sendReservationConfirmation(reservation)
+      } catch (emailErr) {
+        console.error('Failed to send confirmation email', emailErr)
+      }
 
       // Ensure we have a valid response object
       const responseData = {

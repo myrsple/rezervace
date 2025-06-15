@@ -234,7 +234,10 @@ export async function sendCompetitionConfirmation(registration: any) {
 // Admin notifications
 // ---------------------------------------------------------------------------
 
-const ADMIN_FALLBACK_EMAIL = 'tomas.kovarik11@gmail.com'
+// Admin notification recipient
+// Primary:  process.env.ADMIN_EMAIL  (set in Vercel dashboard)
+// Fallback: process.env.SENDER_EMAIL – ensures we never expose personal e-mails in code
+const getAdminRecipient = () => process.env.ADMIN_EMAIL || process.env.SENDER_EMAIL || ''
 
 /**
  * Notifies admin about a new fishing spot reservation.
@@ -286,7 +289,7 @@ export async function sendReservationAdminNotification(reservation: any) {
 
   await transporter.sendMail({
     from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',
-    to: process.env.ADMIN_EMAIL || ADMIN_FALLBACK_EMAIL,
+    to: getAdminRecipient(),
     subject,
     text,
     html
@@ -335,7 +338,7 @@ export async function sendCompetitionAdminNotification(registration: any) {
 
   await transporter.sendMail({
     from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',
-    to: process.env.ADMIN_EMAIL || ADMIN_FALLBACK_EMAIL,
+    to: getAdminRecipient(),
     subject,
     text,
     html

@@ -278,7 +278,7 @@ export default function ReservationSystem() {
       {/* Step 1: Select Fishing Spot */}
       <div className="bg-white rounded-2xl shadow-soft p-8">
         <h2 className="text-3xl font-bold text-semin-blue mb-6">
-          Nejdřív si zvolte lovné místo 🎣
+          Zvolte lovné místo 🎣
         </h2>
         
         {/* Fishing Spots Map */}

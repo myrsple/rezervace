@@ -528,9 +528,11 @@ export default function ReservationCalendar({
         </div>
       </div>
 
-      {competitions.length > 0 && (
-        <div className="mt-6 bg-purple-50 border border-purple-200 rounded-2xl p-6">
-          <h4 className="text-lg font-bold text-purple-900 mb-2">Nadcházející závody 🏆</h4>
+      <div className="mt-6 bg-purple-50 border border-purple-200 rounded-2xl p-6">
+        <h4 className="text-lg font-bold text-purple-900 mb-2">Nadcházející závody 🏆</h4>
+        {competitions.length === 0 ? (
+          <p className="text-sm text-purple-900">Momentálně nejsou vypsané žádné závody.</p>
+        ) : (
           <div className="space-y-2">
             {competitions
               .filter(comp => {
@@ -550,15 +552,15 @@ export default function ReservationCalendar({
                 </div>
               ))}
             <div className="pt-4">
-              <span className="text-sm text-purple-900">V tyto dny není možné rezervovat lovné místo, ale můžete se </span>
+              <span className="text-sm text-purple-900">Ve dny závodů není možné rezervovat lovné místo, ale můžete se </span>
               <a href="#competitions" className="text-sm font-medium text-purple-600 hover:text-purple-700 no-underline">
                 přihlásit do závodu
               </a>
               <span className="text-sm text-purple-900">.</span>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 } 

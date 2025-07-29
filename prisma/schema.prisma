@@ -19,6 +19,9 @@ model FishingSpot {
   reservations Reservation[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+
+  /// Competitions that occupy this fishing spot
+  blockedByCompetitions CompetitionBlockedSpot[]
 }
 
 model Reservation {
@@ -80,6 +83,20 @@ model Competition {
   registrations CompetitionRegistration[]
   createdAt     DateTime                  @default(now())
   updatedAt     DateTime                  @updatedAt
+
+  /// Fishing spots occupied by this competition. These spots will be blocked in the reservation calendar.
+  blockedSpots  CompetitionBlockedSpot[]
+}
+
+/// Join table mapping competitions to the fishing spots they occupy (many-to-many).
+model CompetitionBlockedSpot {
+  competition   Competition  @relation(fields: [competitionId], references: [id])
+  competitionId Int
+
+  fishingSpot   FishingSpot  @relation(fields: [fishingSpotId], references: [id])
+  fishingSpotId Int
+
+  @@id([competitionId, fishingSpotId])
 }
 
 model CompetitionRegistration {

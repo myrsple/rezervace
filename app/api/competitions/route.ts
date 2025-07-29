@@ -22,7 +22,12 @@ export async function GET() {
   try {
     const competitions = await queryWithRetry(() =>
       prisma.competition.findMany({
-        include: { registrations: true },
+        include: { 
+          registrations: true,
+          blockedSpots: {
+            include: { fishingSpot: true }
+          }
+        } as any,
         orderBy: { date: 'asc' },
       })
     )
@@ -38,7 +43,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, date, endDate, capacity, entryFee } = body
+    const { name, date, endDate, capacity, entryFee, blockedSpotIds } = body
 
     if (!name || !date || !capacity || !entryFee) {
       return NextResponse.json(
@@ -67,11 +72,21 @@ export async function POST(request: NextRequest) {
         endDate: endDateObj,
         capacity: parseInt(capacity),
         entryFee: parseFloat(entryFee),
-        isActive: true
+        isActive: true,
+        blockedSpots: blockedSpotIds && Array.isArray(blockedSpotIds) && blockedSpotIds.length>0
+          ? {
+              createMany: {
+                data: blockedSpotIds.map((id: number)=>({ fishingSpotId: id }))
+              }
+            }
+          : undefined
       } as any,
       include: {
-        registrations: true
-      }
+        registrations: true,
+        blockedSpots: {
+          include: { fishingSpot: true }
+        }
+      } as any
     })
 
     return NextResponse.json(competition)

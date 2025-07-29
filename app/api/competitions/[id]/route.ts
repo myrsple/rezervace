@@ -8,9 +8,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const competition = await prisma.competition.findUnique({
       where: { id: competitionId },
       include: {
-        registrations: true
+        registrations: true,
+        blockedSpots: { include: { fishingSpot: true } }
       }
-    })
+    } as any)
 
     if (!competition) {
       return NextResponse.json(
@@ -56,12 +57,40 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (body.entryFee !== undefined) updateData.entryFee = parseFloat(body.entryFee)
     if (body.isActive !== undefined) updateData.isActive = body.isActive
 
-    const updatedCompetition = await prisma.competition.update({
-      where: { id: competitionId },
-      data: updateData,
-      include: {
-        registrations: true
+    const blockedSpotIds: number[] | undefined = body.blockedSpotIds
+
+    // Perform update inside a transaction so that we can synchronise blocked spots relation
+    const updatedCompetition = await prisma.$transaction(async(prismaTx)=>{
+      // First update competition primitive fields
+      const comp = await prismaTx.competition.update({
+        where: { id: competitionId },
+        data: updateData
+      })
+
+      // If blocked spots provided, replace existing set
+      if (blockedSpotIds) {
+        // @ts-ignore delegate available after prisma generate
+        await prismaTx.competitionBlockedSpot.deleteMany({
+          where: { competitionId }
+        })
+
+        if (blockedSpotIds.length>0) {
+          // @ts-ignore delegate available after prisma generate
+          await prismaTx.competitionBlockedSpot.createMany({
+            data: blockedSpotIds.map(id=>({ competitionId, fishingSpotId: id })),
+            skipDuplicates: true
+          })
+        }
       }
+
+      // Return full competition with relations
+      return prismaTx.competition.findUnique({
+        where: { id: competitionId },
+        include: {
+          registrations: true,
+          blockedSpots: { include: { fishingSpot: true } }
+        }
+      } as any)
     })
 
     return NextResponse.json(updatedCompetition)
@@ -95,6 +124,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Delete all registrations first (cascade delete)
     await prisma.competitionRegistration.deleteMany({
+      where: { competitionId }
+    })
+
+    // Delete blocked spots links
+    // @ts-ignore delegate after prisma generate
+    await prisma.competitionBlockedSpot.deleteMany({
       where: { competitionId }
     })
 

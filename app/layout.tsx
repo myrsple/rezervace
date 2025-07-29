@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
 }
 
+export const metadataBase = new URL('https://rybysemin.cz')
+
 export default function RootLayout({
   children,
 }: {

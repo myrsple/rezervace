@@ -5,6 +5,11 @@ import { DEFAULT_BANK_ACCOUNT, generateCzechPaymentQR } from '@/lib/qr-payment'
 import { format } from 'date-fns'
 import { cs } from 'date-fns/locale'
 
+const toLocalDate = (iso: string | Date): Date => {
+  const d = typeof iso === 'string' ? new Date(iso) : iso
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000)
+}
+
 interface CompetitionRegistrationProps {
   competition: Competition
   onClose: () => void
@@ -41,9 +46,9 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
   // Formatting helpers for date
   // -----------------------------
   const formattedDateRange = (() => {
-    const start = new Date(competition.date)
+    const start = toLocalDate(competition.date)
     if (competition.endDate) {
-      const end = new Date(competition.endDate)
+      const end = toLocalDate(competition.endDate!)
       const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
       if (sameMonth) {
         return `${format(start, 'd.', { locale: cs })} – ${format(end, 'd. MMMM yyyy', { locale: cs })}`
@@ -57,7 +62,7 @@ export default function CompetitionRegistration({ competition, onClose }: Compet
     return format(start, 'd. MMMM yyyy', { locale: cs })
   })()
 
-  const startTimeStr = format(new Date(competition.date), 'HH:mm')
+  const startTimeStr = format(toLocalDate(competition.date), 'HH:mm')
 
   // generate QR after successful registration
   useEffect(()=>{

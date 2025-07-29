@@ -81,6 +81,10 @@ export interface Competition {
   entryFee: number
   isActive: boolean
   registrations?: CompetitionRegistration[]
+  /**
+   * Fishing spots occupied by this competition. If empty/null the competition blocks ALL spots (legacy behaviour).
+   */
+  blockedSpots?: CompetitionBlockedSpot[]
   createdAt: string
   updatedAt: string
 }
@@ -100,4 +104,10 @@ export interface CompetitionRegistration {
   createdAt: string
   updatedAt: string
   competition?: Competition
+}
+
+export interface CompetitionBlockedSpot {
+  competitionId: number
+  fishingSpotId: number
+  fishingSpot?: FishingSpot
 } 

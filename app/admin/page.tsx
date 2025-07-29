@@ -15,7 +15,7 @@ export default function AdminDashboard() {
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTab, setSelectedTab] = useState<'reservations' | 'spots' | 'competitions'>('reservations')
-  const [newCompetition, setNewCompetition] = useState({ name: '', date: '', endDate: '', capacity: '', entryFee: '' })
+  const [newCompetition, setNewCompetition] = useState({ name: '', date: '', endDate: '', capacity: '', entryFee: '', blockedSpotIds: [] as number[] })
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' })
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; reservationId: string; customerName: string }>({ 
     isOpen: false, 
@@ -31,7 +31,7 @@ export default function AdminDashboard() {
     isOpen: false, 
     competition: null 
   })
-  const [editFormData, setEditFormData] = useState({ name: '', date: '', endDate: '', capacity: '', entryFee: '' })
+  const [editFormData, setEditFormData] = useState({ name: '', date: '', endDate: '', capacity: '', entryFee: '', blockedSpotIds: [] as number[] })
   const [operationLoading, setOperationLoading] = useState({
     create: false,
     delete: false,
@@ -242,7 +242,7 @@ export default function AdminDashboard() {
 
       if (response.ok) {
         await fetchData()
-        setNewCompetition({ name: '', date: '', endDate: '', capacity: '', entryFee: '' })
+        setNewCompetition({ name: '', date: '', endDate: '', capacity: '', entryFee: '', blockedSpotIds: [] as number[] })
         showFeedback('success', 'Závod byl úspěšně vytvořen')
       } else {
         const error = await response.json()
@@ -332,14 +332,15 @@ export default function AdminDashboard() {
       date: startStr,
       endDate: endStr,
       capacity: competition.capacity.toString(),
-      entryFee: competition.entryFee.toString()
+      entryFee: competition.entryFee.toString(),
+      blockedSpotIds: (competition.blockedSpots || []).map((bs:any)=> bs.fishingSpotId)
     })
     setEditCompetition({ isOpen: true, competition })
   }
 
   const closeEditCompetition = () => {
     setEditCompetition({ isOpen: false, competition: null })
-    setEditFormData({ name: '', date: '', endDate: '', capacity: '', entryFee: '' })
+    setEditFormData({ name: '', date: '', endDate: '', capacity: '', entryFee: '', blockedSpotIds: [] as number[] })
   }
 
   const updateCompetition = async () => {
@@ -364,7 +365,8 @@ export default function AdminDashboard() {
           date: editFormData.date,
           capacity: parseInt(editFormData.capacity),
           entryFee: parseFloat(editFormData.entryFee),
-          endDate: editFormData.endDate
+          endDate: editFormData.endDate,
+          blockedSpotIds: editFormData.blockedSpotIds
         }),
       })
 
@@ -1144,6 +1146,31 @@ export default function AdminDashboard() {
                     disabled={operationLoading.create}
                   />
                 </div>
+                {/* Obsadí lovná místa - selector */}
+                <div className="col-span-full">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Obsadí lovná místa</label>
+                  <div className="flex flex-wrap gap-2">
+                    {fishingSpots.map(spot => {
+                      const selected = newCompetition.blockedSpotIds.includes(spot.id)
+                      return (
+                        <label key={spot.id} className={`flex items-center space-x-1 px-2 py-1 border-2 rounded-lg cursor-pointer ${selected ? 'border-semin-blue bg-semin-light-blue' : 'border-gray-200'}`}>
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-semin-blue"
+                            checked={selected}
+                            onChange={() => {
+                              setNewCompetition(prev => {
+                                const list = selected ? prev.blockedSpotIds.filter(id => id !== spot.id) : [...prev.blockedSpotIds, spot.id]
+                                return { ...prev, blockedSpotIds: list }
+                              })
+                            }}
+                          />
+                          <span className="text-sm">{spot.number}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
               <button
                 onClick={createCompetition}
@@ -1764,6 +1791,31 @@ export default function AdminDashboard() {
                         'Uložit změny'
                       )}
                     </button>
+                  </div>
+                  {/* Obsadí lovná místa - selector (edit) */}
+                  <div className="col-span-full">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Obsadí lovná místa</label>
+                    <div className="flex flex-wrap gap-2">
+                      {fishingSpots.map(spot => {
+                        const selected = editFormData.blockedSpotIds.includes(spot.id)
+                        return (
+                          <label key={spot.id} className={`flex items-center space-x-1 px-2 py-1 border-2 rounded-lg cursor-pointer ${selected ? 'border-semin-blue bg-semin-light-blue' : 'border-gray-200'}`}>
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 text-semin-blue"
+                              checked={selected}
+                              onChange={() => {
+                                setEditFormData(prev => {
+                                  const list = selected ? prev.blockedSpotIds.filter(id => id !== spot.id) : [...prev.blockedSpotIds, spot.id]
+                                  return { ...prev, blockedSpotIds: list }
+                                })
+                              }}
+                            />
+                            <span className="text-sm">{spot.number}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>

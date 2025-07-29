@@ -17,6 +17,11 @@ import {
   addHours
 } from 'date-fns'
 import { cs } from 'date-fns/locale'
+// helper
+const toLocalDate = (iso: string | Date): Date => {
+  const d = typeof iso === 'string' ? new Date(iso) : iso
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000)
+}
 
 interface ReservationCalendarProps {
   spot: FishingSpot
@@ -88,8 +93,16 @@ export default function ReservationCalendar({
     }
 
     const hasCompetition = competitions.some(competition => {
-      const compStart = new Date(competition.date)
-      const compEnd = competition.endDate ? new Date(competition.endDate) : addHours(compStart, 24)
+      // If competition specifies blockedSpots, ensure this spot is included
+      // Fallback to legacy behaviour (no blockedSpots → affects all spots)
+      const affectsThisSpot = !competition.blockedSpots || competition.blockedSpots.length === 0
+        ? true
+        : competition.blockedSpots.some((bs: any) => bs.fishingSpot?.number === spot.number || bs.fishingSpotId === spot.id)
+
+      if (!affectsThisSpot) return false
+
+      const compStart = toLocalDate(competition.date)
+      const compEnd = competition.endDate ? toLocalDate(competition.endDate) : addHours(compStart, 24)
 
       // Calculate duration in ms
       const durationMs = compEnd.getTime() - compStart.getTime()

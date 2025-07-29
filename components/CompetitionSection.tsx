@@ -7,6 +7,14 @@ import { format, startOfDay, addHours } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import CompetitionRegistration from './CompetitionRegistration'
 
+// Helper: treat timestamp stored as UTC but representing local naive time
+const toLocalDate = (iso: string | Date | undefined): Date | null => {
+  if(!iso) return null
+  const d = typeof iso === 'string' ? new Date(iso) : iso
+  // Convert from real UTC to naive local by subtracting the timezone offset
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000)
+}
+
 const fetcher = (url: string) => fetch(url).then(async r => {
   if (!r.ok) throw new Error('http ' + r.status)
   return r.json()
@@ -23,7 +31,7 @@ export default function CompetitionSection() {
     const today = startOfDay(new Date())
     return data.filter((comp: Competition) => {
       if (!comp.isActive) return false
-      const end = comp.endDate ? new Date(comp.endDate) : addHours(new Date(comp.date),24)
+      const end = comp.endDate ? toLocalDate(comp.endDate)! : addHours(toLocalDate(comp.date)!,24)
       return startOfDay(end) >= today
     })
   }, [data])
@@ -110,8 +118,8 @@ export default function CompetitionSection() {
           const isFull = isCompetitionFull(competition)
           const registrationCount = competition.registrations?.length || 0
           
-          const startDateObj = new Date(competition.date)
-          const endDateObj = competition.endDate ? new Date(competition.endDate) : null
+          const startDateObj = toLocalDate(competition.date)!
+          const endDateObj = competition.endDate ? toLocalDate(competition.endDate)! : null
           const sameMonth = endDateObj && startDateObj.getMonth() === endDateObj.getMonth() && startDateObj.getFullYear() === endDateObj.getFullYear()
           const startLabel = endDateObj && sameMonth ? format(startDateObj,'d.',{locale:cs}) : format(startDateObj,'d. MMMM',{locale:cs})
           const endLabel = endDateObj ? format(endDateObj,'d. MMMM',{locale:cs}) : null
@@ -138,7 +146,7 @@ export default function CompetitionSection() {
                 </div>
                 <div className="flex items-center">
                   <span className="mr-2">🕒</span>
-                  Start: {format(new Date(competition.date), 'HH:mm', { locale: cs })}
+                  Start: {format(toLocalDate(competition.date)!, 'HH:mm', { locale: cs })}
                 </div>
                 <div className="flex items-center">
                   <span className="mr-2">✅</span>

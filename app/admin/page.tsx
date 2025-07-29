@@ -58,6 +58,17 @@ export default function AdminDashboard() {
   const [hasMoreReservations, setHasMoreReservations] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
 
+  // Spots list for selectors – VIP (number 99) first
+  const sortedSpots = React.useMemo(()=>{
+    const arr = [...fishingSpots]
+    arr.sort((a,b)=>{
+      if(a.number===99) return -1
+      if(b.number===99) return 1
+      return a.number-b.number
+    })
+    return arr
+  },[fishingSpots])
+
   // Fetch data on mount
   useEffect(() => {
     let isMounted = true
@@ -1014,10 +1025,7 @@ export default function AdminDashboard() {
               <h2 className="text-lg font-semibold text-gray-900">Lovná místa</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-              {[
-                ...fishingSpots.filter(spot => spot.name === 'Lovné místo VIP' || spot.number === 99),
-                ...fishingSpots.filter(spot => spot.name !== 'Lovné místo VIP' && spot.number !== 99)
-              ].map((spot) => {
+              {sortedSpots.map((spot) => {
                 const nextReservation = getNextReservation(spot.id)
                 return (
                   <div key={spot.id} className={`border border-gray-200 rounded-lg p-4 ${!spot.isActive ? 'bg-gray-50' : ''}`}>
@@ -1165,7 +1173,7 @@ export default function AdminDashboard() {
                               })
                             }}
                           />
-                          <span className="text-sm">{spot.number}</span>
+                          <span className="text-sm">{spot.number===99 ? 'VIP' : spot.number}</span>
                         </label>
                       )
                     })}
@@ -1811,7 +1819,7 @@ export default function AdminDashboard() {
                                 })
                               }}
                             />
-                            <span className="text-sm">{spot.number}</span>
+                            <span className="text-sm">{spot.number===99 ? 'VIP' : spot.number}</span>
                           </label>
                         )
                       })}

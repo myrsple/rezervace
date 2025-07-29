@@ -33,7 +33,8 @@ export async function PATCH(
 
     // If payment just marked received, send email
     if (!current.isPaid && reservation.isPaid) {
-      sendReservationPaymentReceived(reservation).catch(console.error)
+      console.info('[reservation] Payment received, sending confirmation email', reservation.id)
+      await sendReservationPaymentReceived(reservation).catch(console.error)
     }
 
     return NextResponse.json(reservation)

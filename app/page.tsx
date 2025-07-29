@@ -15,7 +15,7 @@ export default function Home() {
       <div className="max-w-7xl mx-auto">
         <header className="text-center mb-12">
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-            Sportovní rybolov na vodní nádrži Tomášek, zasazený do krásné přírody nedaleko Přelouče. 
+            Sportovní rybolov na vodní nádrži Tomášek, zasazený do malebné přírody nedaleko Přelouče. 
             Nabízíme 15 lovných míst s flexibilní dobou rezervace a pořádáme pravidelné závody.
           </p>
 
@@ -36,7 +36,7 @@ export default function Home() {
               </p>
             </div>
             <div className="bg-white rounded-xl shadow-soft p-5 text-left">
-              <div className="text-2xl mb-2">🎪</div>
+              <div className="text-2xl mb-2">⚓️</div>
               <h3 className="text-lg font-bold text-blue-700 mb-1.5">Kompletní vybavení</h3>
               <p className="text-gray-600 text-sm">
                 Půjčovna rybářského vybavení a občerstvení přímo v areálu pro váš komfort.

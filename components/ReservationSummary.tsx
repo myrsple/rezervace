@@ -70,7 +70,7 @@ export default function ReservationSummary({
         </div>
         <div className="flex gap-2 text-sm">
           <span className="text-gray-600">Lovné místo:</span>
-          <span className="text-gray-900">{spot.number}</span>
+          <span className="text-gray-900">{(spot.name==='Lovné místo VIP' || spot.number===99) ? 'VIP' : spot.number}</span>
         </div>
       </div>
     </div>

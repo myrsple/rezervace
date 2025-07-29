@@ -13,7 +13,7 @@ export const GEAR_ITEMS: GearItem[] = [
     name: 'Podběrák',
     description: 'Velký podběrák pro bezpečné podebrání úlovku',
     price: 50,
-    emoji: '🥅'
+    emoji: '🕸️'
   },
   {
     id: 'podlozka',

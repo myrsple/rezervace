@@ -266,7 +266,7 @@ export default function ReservationCalendar({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold text-semin-blue">
-          {spot.name === 'Lovné místo VIP' || spot.number === 99 ? 'Lovné místo VIP 👑' : `Lovné místo ${spot.number}`}
+          {spot.name === 'Lovné místo VIP' || spot.number === 99 ? 'Lovné místo VIP – pro dva, s chatkou' : `Lovné místo ${spot.number}`}
         </h3>
         <div className="flex items-center space-x-2">
           <button 
@@ -552,9 +552,9 @@ export default function ReservationCalendar({
                 </div>
               ))}
             <div className="pt-4">
-              <span className="text-sm text-purple-900">Ve dny závodů není možné rezervovat lovné místo, ale můžete se </span>
+              <span className="text-sm text-purple-900">Ve dny závodů není možné rezervovat lovné místo, ale můžete se do nich </span>
               <a href="#competitions" className="text-sm font-medium text-purple-600 hover:text-purple-700 no-underline">
-                přihlásit do závodu
+                přihlásit
               </a>
               <span className="text-sm text-purple-900">.</span>
             </div>

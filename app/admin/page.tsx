@@ -46,6 +46,11 @@ export default function AdminDashboard() {
     registrationId: '',
     customerName: ''
   })
+  const [payConfirmation, setPayConfirmation] = useState<{ isOpen: boolean; reservationId: string; customerName: string }>({
+    isOpen: false,
+    reservationId: '',
+    customerName: ''
+  })
 
   // Pagination for reservations ------------------------------------------------
   const PAGE_SIZE = 30
@@ -396,6 +401,7 @@ export default function AdminDashboard() {
   }
 
   const updateReservationPaidStatus = async (reservationId: string, isPaid: boolean) => {
+    if(isPaid===false) return // disallow unmarking
     const currentScroll = window.scrollY
     try {
       const response = await fetch(`/api/reservations/${reservationId}`, {
@@ -952,12 +958,16 @@ export default function AdminDashboard() {
                       {/* VS */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reservation.variableSymbol || '—'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <input
-                          type="checkbox"
-                          checked={reservation.isPaid}
-                          onChange={(e) => updateReservationPaidStatus(reservation.id, e.target.checked)}
-                          className="w-6 h-6 sm:w-4 sm:h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
-                        />
+                        {reservation.isPaid ? (
+                          <span role="img" aria-label="paid">✅</span>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={false}
+                            onChange={()=>setPayConfirmation({ isOpen:true, reservationId: reservation.id, customerName: reservation.customerName })}
+                            className="w-6 h-6 sm:w-4 sm:h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2 cursor-pointer"
+                          />
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {format(new Date(reservation.createdAt), 'd.M.yyyy HH:mm', { locale: cs })}
@@ -1832,6 +1842,35 @@ export default function AdminDashboard() {
                   >
                     Smazat rezervaci
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pay Confirmation Modal */}
+      {payConfirmation.isOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-green-100 rounded-full">
+                <span className="text-2xl">💰</span>
+              </div>
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Potvrzení platby</h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  Potvrdit přijetí platby od <strong>{payConfirmation.customerName}</strong> a odeslat potvrzovací email?
+                </p>
+                <div className="flex space-x-3 justify-center">
+                  <button
+                    onClick={()=>setPayConfirmation({ isOpen:false, reservationId:'', customerName:'' })}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >Zrušit</button>
+                  <button
+                    onClick={()=>{updateReservationPaidStatus(payConfirmation.reservationId,true); setPayConfirmation({ isOpen:false, reservationId:'', customerName:'' })}}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                  >Potvrdit</button>
                 </div>
               </div>
             </div>

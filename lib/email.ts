@@ -105,12 +105,13 @@ export async function sendReservationConfirmation(reservation: any) {
     `💰 Cena:      ${totalPrice} Kč${gearListStr ? ` (včetně vybavení: ${gearListStr})` : ''}\n`+
     `${variableSymbol ? '#️⃣ VS: ' + variableSymbol + '\n' : ''}`+
     `------------------------------------------------------------\n`+
-    `Platbu prosím odešlete převodem na účet ${bank} a uveďte VS ${variableSymbol}.\n\n`+
+    `Platbu prosím odešlete do 48h převodem na účet ${bank} a uveďte VS ${variableSymbol}.\n\n`+
+    `Jakmile vaši platbu obdržíme, pošleme vám email o přijetí a rezervace tím bude potvrzena. Pokud rezervaci do 48h nezaplatíte, bude automaticky zrušena.\n\n`+
     `Pokud rezervaci potřebujete zrušit, dejte nám prosím včas vědět na +420 773 291 941 nebo napište na info@rybysemin.cz. Tento email je generovaný automaticky, neodpovídejte na něj.\n\n`+
     `Těšíme se na vás.<br><strong>Lovu zdar!</strong>\n\n`+
     `Tým Sportovní Rybolov Semín`;
 
-  let htmlBody = `\n<style>\n  .rs-table td{padding:4px 8px;}\n  .rs-label{font-weight:600;color:#003366;}\n</style>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Dobrý den <strong>${customerName}</strong>,</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">děkujeme za vaši rezervaci lovného místa. Posíláme shrnutí a informace k platbě:</p>\n<table class="rs-table" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:15px;">\n  <tr><td class="rs-label">📅 Datum:</td><td>${dateRange}</td></tr>\n  <tr><td class="rs-label">🕒 Začátek:</td><td>${startLabel}</td></tr>\n  <tr><td class="rs-label">🎣 Lovné místo:</td><td>${spotLabel}</td></tr>\n  <tr><td class="rs-label">📏 Délka pobytu:</td><td>${duration}</td></tr>\n  <tr><td class="rs-label">✅ Cena:</td><td>${totalPrice} Kč${gearListStr ? ` (včetně vybavení: ${gearListStr})` : ''}</td></tr>\n</table>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Platbu prosím odešlete převodem na účet <strong>${bank}</strong> a uveďte <strong>VS&nbsp;${variableSymbol}</strong>.</p>`
+  let htmlBody = `\n<style>\n  .rs-table td{padding:4px 8px;}\n  .rs-label{font-weight:600;color:#003366;}\n</style>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Dobrý den <strong>${customerName}</strong>,</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">děkujeme za vaši rezervaci lovného místa. Posíláme shrnutí a informace k platbě:</p>\n<table class="rs-table" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:15px;">\n  <tr><td class="rs-label">📅 Datum:</td><td>${dateRange}</td></tr>\n  <tr><td class="rs-label">🕒 Začátek:</td><td>${startLabel}</td></tr>\n  <tr><td class="rs-label">🎣 Lovné místo:</td><td>${spotLabel}</td></tr>\n  <tr><td class="rs-label">📏 Délka pobytu:</td><td>${duration}</td></tr>\n  <tr><td class="rs-label">✅ Cena:</td><td>${totalPrice} Kč${gearListStr ? ` (včetně vybavení: ${gearListStr})` : ''}</td></tr>\n</table>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Platbu prosím odešlete do 48&nbsp;h převodem na účet <strong>${bank}</strong> a uveďte <strong>VS&nbsp;${variableSymbol}</strong>.</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Jakmile vaši platbu obdržíme, pošleme vám e-mail o přijetí a rezervace tím bude potvrzena. Pokud rezervaci do 48&nbsp;h nezaplatíte, bude automaticky zrušena.</p>`
 
   let attachments: any[] = []
   try {
@@ -345,10 +346,70 @@ export async function sendCompetitionAdminNotification(registration: any) {
   })
 }
 
+export async function sendReservationPaymentReceived(reservation: any) {
+  const transporter = await getTransporter()
+  if (!transporter) return
+
+  const {
+    customerEmail,
+    customerName,
+    fishingSpot,
+    startDate,
+    endDate,
+    totalPrice,
+    variableSymbol,
+    duration,
+    gearPrice,
+    rentedGear
+  } = reservation as any
+
+  const rentedGearNames: string[] = rentedGear ? getGearNames(rentedGear) : []
+  const gearListStr = rentedGearNames.length ? rentedGearNames.join(', ') : ''
+
+  const startDateObj = new Date(startDate)
+  const endDateObj = new Date(endDate)
+  const dateRange = `${format(startDateObj,'d.',{locale:cs})} – ${format(endDateObj,'d. MMMM yyyy',{locale:cs})}`
+  const weekday = format(startDateObj,'EEEE',{locale:cs})
+  const startLabel = `${weekday.charAt(0).toUpperCase() + weekday.slice(1)} 12:00 (poledne)`
+  const spotLabel = (fishingSpot?.name ?? '').includes('VIP') || fishingSpot?.number === 99 ? 'VIP' : fishingSpot?.number
+
+  const subject = `✅ Platba přijata – rezervace ${spotLabel}`
+
+  const textBody = `Dobrý den ${customerName},\n\n`+
+    `potvrzujeme přijetí platby za vaši rezervaci lovného místa. Rezervace je nyní potvrzena.\n`+
+    `------------------------------------------------------------\n`+
+    `🎣 Lovné místo: ${spotLabel}\n`+
+    `📅 Datum:    ${dateRange}\n`+
+    `🕒 Začátek:   ${startLabel}\n`+
+    `📏 Délka pobytu: ${duration}\n`+
+    `💰 Cena:      ${totalPrice} Kč${gearListStr ? ` (včetně vybavení: ${gearListStr})` : ''}\n`+
+    `${variableSymbol ? '#️⃣ VS: ' + variableSymbol + '\n' : ''}`+
+    `------------------------------------------------------------\n`+
+    `Těšíme se na vás.\n\n`+
+    `Pokud rezervaci potřebujete zrušit, dejte nám prosím včas vědět na +420 773 291 941 nebo napište na info@rybysemin.cz. Tento email je generovaný automaticky, neodpovídejte na něj.\n\n`+
+    `Tým Sportovní Rybolov Semín`
+
+  let htmlBody = `\n<style>\n  .rs-table td{padding:4px 8px;}\n  .rs-label{font-weight:600;color:#003366;}\n</style>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Dobrý den <strong>${customerName}</strong>,</p>\n<p style="font-family:Arial,sans-serif;font-size:15px;">potvrzujeme přijetí platby za vaši rezervaci lovného místa. Rezervace je nyní potvrzena.</p>\n<table class="rs-table" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:15px;">\n  <tr><td class="rs-label">📅 Datum:</td><td>${dateRange}</td></tr>\n  <tr><td class="rs-label">🕒 Začátek:</td><td>${startLabel}</td></tr>\n  <tr><td class="rs-label">🎣 Lovné místo:</td><td>${spotLabel}</td></tr>\n  <tr><td class="rs-label">📏 Délka pobytu:</td><td>${duration}</td></tr>\n  <tr><td class="rs-label">✅ Cena:</td><td>${totalPrice} Kč${gearListStr ? ` (včetně vybavení: ${gearListStr})` : ''}</td></tr>\n</table>\n<p style="font-family:Arial,sans-serif;font-size:15px;">Pokud rezervaci potřebujete zrušit, dejte nám prosím včas vědět na <a href="tel:+420773291941">+420&nbsp;773&nbsp;291&nbsp;941</a> nebo napište na <a href="mailto:info@rybysemin.cz">info@rybysemin.cz</a>. Tento email je generovaný automaticky, neodpovídejte na něj.</p>`
+
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',
+      to: customerEmail,
+      subject,
+      text: textBody,
+      html: htmlBody
+    })
+    console.info('[email] Payment received notice sent:', info.messageId)
+  } catch(err){
+    console.error('Error sending payment received email', err)
+  }
+}
+
 // Update default export
 export default {
   sendReservationConfirmation,
   sendCompetitionConfirmation,
   sendReservationAdminNotification,
   sendCompetitionAdminNotification,
+  sendReservationPaymentReceived,
 } 

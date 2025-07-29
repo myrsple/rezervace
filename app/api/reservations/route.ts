@@ -6,6 +6,18 @@ import { sendReservationConfirmation, sendReservationAdminNotification } from '.
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
+  // Remove unpaid reservations that are older than 48 hours
+  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000)
+  try {
+    await prisma.reservation.deleteMany({
+      where: {
+        isPaid: false,
+        createdAt: { lt: cutoff }
+      }
+    })
+  } catch (cleanupErr) {
+    console.error('Failed to cleanup old unpaid reservations:', cleanupErr)
+  }
   try {
     // Pagination parameters (optional)
     const { searchParams } = new URL(request.url)
@@ -33,6 +45,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // House-keeping: prune stale unpaid reservations so they no longer block the calendar
+  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000)
+  try {
+    await prisma.reservation.deleteMany({
+      where: {
+        isPaid: false,
+        createdAt: { lt: cutoff }
+      }
+    })
+  } catch (cleanupErr) {
+    console.error('Failed to cleanup old unpaid reservations:', cleanupErr)
+  }
   try {
     // Test database connection first
     try {

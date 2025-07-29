@@ -77,7 +77,7 @@ export default function ReservationCalendar({
     )
   }, [reservations, spot.number])
 
-  const getDateAvailability = (date: Date): 'available' | 'occupied' | 'competition' | 'past' => {
+  const getDateAvailability = (date: Date): 'available' | 'reserved' | 'occupied' | 'competition' | 'past' => {
     if (competitionsLoading) return 'past'
 
     const dayStart = startOfDay(date)
@@ -129,6 +129,15 @@ export default function ReservationCalendar({
 
     if (dayReservations.length === 0) {
       return 'available'
+    }
+
+    // Distinguish unpaid reservations that are still awaiting confirmation (isPaid===false)
+    const hasPaid = dayReservations.some(reservation => reservation.isPaid)
+    const hasUnpaid = dayReservations.some(reservation => !reservation.isPaid)
+
+    // If the day only contains unpaid reservations, mark it as "reserved" (yellow)
+    if (!hasPaid && hasUnpaid) {
+      return 'reserved'
     }
 
     // Treat any non-"day" duration as a full-day / multi-day reservation so legacy
@@ -215,7 +224,7 @@ export default function ReservationCalendar({
     isSelected: boolean,
     canSelect: boolean,
     isCurrentMonth: boolean,
-    availability: 'available' | 'occupied' | 'competition' | 'past'
+    availability: 'available' | 'reserved' | 'occupied' | 'competition' | 'past'
   ): string => {
     const baseClasses = "min-h-[60px] p-1 flex flex-col justify-between text-left transition-all duration-200 text-sm"
     let extraDim = ''
@@ -231,6 +240,9 @@ export default function ReservationCalendar({
         break
       case 'occupied':
         availabilityClasses = `${baseClasses} bg-red-200 text-gray-700 cursor-not-allowed ring-1 ring-green-300${extraDim}`
+        break
+      case 'reserved':
+        availabilityClasses = `${baseClasses} bg-yellow-200 text-gray-800 cursor-not-allowed ring-1 ring-yellow-300${extraDim}`
         break
       case 'competition':
         availabilityClasses = `${baseClasses} bg-purple-200 text-purple-900 cursor-not-allowed ring-1 ring-green-300${extraDim}`
@@ -286,7 +298,7 @@ export default function ReservationCalendar({
         </div>
         <div className="flex items-center">
           <div className="w-3 h-3 rounded bg-yellow-200 ring-1 ring-yellow-300 mr-1.5"></div>
-          <span className="text-gray-600">Zvolené</span>
+          <span className="text-gray-600">Rezervované</span>
         </div>
         <div className="flex items-center">
           <div className="w-3 h-3 rounded bg-red-200 ring-1 ring-red-300 mr-1.5"></div>
@@ -358,14 +370,19 @@ export default function ReservationCalendar({
               }
             }
 
-            // Determine tile type
-            let tileType = 'available';
+            // Determine tile type with half-day awareness for unpaid holds
+            let tileType: 'available' | 'reserved' | 'reservedSplit' | 'occupied' | 'split' | 'competition' = 'available'
+
+            const hasPaidRes = dayReservations.some(r => r.isPaid)
+            const hasUnpaidRes = dayReservations.some(r => !r.isPaid)
+            const allUnpaid = hasUnpaidRes && !hasPaidRes
+
             if (availability === 'competition') {
-              tileType = 'competition';
+              tileType = 'competition'
             } else if (morningBooked && eveningBooked) {
-              tileType = 'occupied';
+              tileType = allUnpaid ? 'reserved' : 'occupied'
             } else if (morningBooked || eveningBooked) {
-              tileType = 'split';
+              tileType = allUnpaid ? 'reservedSplit' : 'split'
             }
 
             // Highlight preview for selected reservation (half-aware)
@@ -420,10 +437,13 @@ export default function ReservationCalendar({
               }
             }
 
-            // For visual styling choose:
-            //  - 'past' remains past
-            //  - split days use 'available' styling
-            const styleAvailability = availability === 'past' ? 'past' : (tileType === 'split' ? 'available' : (tileType as any))
+            // Map tileType to colour class group for background (base cell)
+            const styleAvailability: 'available' | 'reserved' | 'occupied' | 'competition' | 'past' =
+              tileType === 'reserved' ? 'reserved'
+              : tileType === 'occupied' ? 'occupied'
+              : tileType === 'competition' ? 'competition'
+              : availability === 'past' ? 'past'
+              : 'available'
             let cellClasses = getDayClasses(date, isSelected, canSelect, isCurrentMonth, styleAvailability) + ' font-semibold transition-transform duration-150 ease-in-out';
             if (canSelect && isCurrentMonth && !isSelected && tileType !== 'competition') {
               cellClasses += ' hover:scale-105 hover:shadow-md focus:scale-105 focus:shadow-md';
@@ -468,11 +488,12 @@ export default function ReservationCalendar({
                 style={{ minHeight: 48, position: 'relative', overflow: 'visible', zIndex: isSelected ? 30 : undefined }}
               >
                 {/* Split tile rendering with red half overlay */}
-                {tileType === 'split' && availability !== 'past' && (
+                {/* Half-day overlay – red for paid, yellow for unpaid */}
+                {(tileType === 'split' || tileType === 'reservedSplit') && availability !== 'past' && (
                   morningBooked ? (
-                    <div className="absolute inset-y-0 left-0 w-1/2 bg-red-200 rounded-r-md" style={{opacity:1, zIndex:0}} />
+                    <div className={`absolute inset-y-0 left-0 w-1/2 ${tileType==='reservedSplit'?'bg-yellow-200':'bg-red-200'} rounded-r-md`} style={{opacity:1, zIndex:0}} />
                   ) : (
-                    <div className="absolute inset-y-0 right-0 w-1/2 bg-red-200 rounded-l-md" style={{opacity:1, zIndex:0}} />
+                    <div className={`absolute inset-y-0 right-0 w-1/2 ${tileType==='reservedSplit'?'bg-yellow-200':'bg-red-200'} rounded-l-md`} style={{opacity:1, zIndex:0}} />
                   )
                 )}
 
@@ -494,11 +515,11 @@ export default function ReservationCalendar({
                 {/* Preview overlay for current selection – pale blue fill, no border */}
                 {isInSelectedRange && selectedHalf && (
                   selectedHalf === 'full' ? (
-                    <div className="absolute inset-0 bg-yellow-200 z-5" style={{opacity:0.65}}></div>
+                    <div className="absolute inset-0 bg-blue-200 z-5" style={{opacity:0.55}}></div>
                   ) : selectedHalf === 'morning' ? (
-                    <div className="absolute inset-y-0 left-0 w-1/2 bg-yellow-200 rounded-r-md z-5" style={{opacity:0.65}}></div>
+                    <div className="absolute inset-y-0 left-0 w-1/2 bg-blue-200 rounded-r-md z-5" style={{opacity:0.55}}></div>
                   ) : (
-                    <div className="absolute inset-y-0 right-0 w-1/2 bg-yellow-200 rounded-l-md z-5" style={{opacity:0.65}}></div>
+                    <div className="absolute inset-y-0 right-0 w-1/2 bg-blue-200 rounded-l-md z-5" style={{opacity:0.55}}></div>
                   )
                 )}
               </button>

@@ -96,6 +96,16 @@ export default function ReservationSystem() {
     setSelectedDate(date)
     setWeatherForecast(getWeatherForDate(date))
 
+    // If the selected spot allows only day bookings, keep duration fixed to 'day'
+    const allowsLong = selectedSpot ? (selectedSpot.name === 'Lovné místo VIP' || (selectedSpot.number && selectedSpot.number <= 6)) : false
+    if (!allowsLong) {
+      // Ensure the duration is locked to 'day' (covers edge-cases when state was different)
+      if (selectedDuration !== 'day') {
+        setSelectedDuration('day')
+      }
+      return
+    }
+
     // Evaluate feasibility based on the date the user just clicked (not the stale state value)
     const dayOk = isDayPossible(date)
     const h24Ok = isDurationPossible('24h', date)
@@ -147,8 +157,13 @@ export default function ReservationSystem() {
     const isCompetitionDay = (d: Date)=>{
       if (!competitionsData) return false
       return competitionsData.some((c: any)=>{
+        // Ignore inactive competitions or ones that ended over 48h ago (same as calendar visibility)
+        if (!c.isActive) return false
+
         const compStart = new Date(c.date)
         const compEnd = c.endDate ? new Date(c.endDate) : addHours(compStart, 24)
+        const visibilityEnd = addHours(compEnd, 48)
+        if (!(new Date() < visibilityEnd)) return false
 
         // Single-day competition (≤24 h) blocks only the start calendar day
         const durationMs = compEnd.getTime() - compStart.getTime()
@@ -215,8 +230,15 @@ export default function ReservationSystem() {
       return spotRes.some(res=>{const s=new Date(res.startDate); const e=new Date(new Date(res.endDate).getTime()-1); return e>start && s<end})
     }
     const isCompetitionDayInline = (competitionsData??[]).some((c:any)=>{
-      const startC = startOfDay(new Date(c.date))
-      const endC = c.endDate ? startOfDay(new Date(c.endDate)) : startOfDay(addHours(new Date(c.date),24))
+      // Ignore inactive competitions or competitions that ended 48h ago
+      if (!c.isActive) return false
+      const compStart = new Date(c.date)
+      const compEnd = c.endDate ? new Date(c.endDate) : addHours(compStart,24)
+      const visibilityEnd = addHours(compEnd,48)
+      if (!(new Date() < visibilityEnd)) return false
+
+      const startC = startOfDay(compStart)
+      const endC = startOfDay(compEnd)
       const d = startOfDay(dateToCheck)
       return d >= startC && d <= endC
     })

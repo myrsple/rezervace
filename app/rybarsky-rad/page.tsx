@@ -78,13 +78,6 @@ export default function FishingRulesPage() {
             úmyslné poškození ryby) předáváme věc Policii&nbsp;ČR.
           </p>
 
-          <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Dokumenty ke stažení</h2>
-          <p>
-            Kompletní znění zákonných předpisů a&nbsp;aktuální soupis revírů Českého rybářského svazu
-            najdete na&nbsp;
-            <a href="https://www.rybsvaz.cz/" target="_blank" rel="noopener" className="text-blue-700 font-semibold hover:underline">webu ČRS</a>.
-          </p>
-
           <h2 className="text-2xl font-semibold text-blue-700 mt-8 mb-4">Rezervace a platby</h2>
           <p>
             Denní i vícedenní povolenky vyřídíte na stránce Rezervujte nebo osobně přímo na pláži u rybníka Tomášek.

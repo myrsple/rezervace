@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../../lib/prisma'
+import { sendReservationPaymentReceived } from '../../../../lib/email'
 
 export async function PATCH(
   request: NextRequest,
@@ -32,7 +33,7 @@ export async function PATCH(
 
     // If payment just marked received, send email
     if (!current.isPaid && reservation.isPaid) {
-      import('@/lib/email').then(m=>m.sendReservationPaymentReceived(reservation).catch(console.error))
+      sendReservationPaymentReceived(reservation).catch(console.error)
     }
 
     return NextResponse.json(reservation)

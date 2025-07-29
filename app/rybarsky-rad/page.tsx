@@ -6,6 +6,21 @@ export const metadata: Metadata = {
   title: 'Rybářský řád | Ryby Semín',
   description: 'Pravidla sportovního rybolovu "chyť a pusť" na vodní nádrži Tomášek v Semíně – povolené vybavení, doba lovu a šetrné zacházení s rybou.',
   keywords: ['Ryby Semín', 'rybářský řád', 'pravidla rybolov', 'chyť a pusť', 'rybník Tomášek'],
+  openGraph: {
+    title: 'Rybářský řád – Ryby Semín',
+    description: 'Pravidla sportovního rybolovu chyť a pusť na rybníku Tomášek v Semíně.',
+    url: 'https://rybysemin.cz/rybarsky-rad',
+    siteName: 'Ryby Semín',
+    images: [{ url: '/og-home.jpg', width: 1200, height: 630, alt: 'Rybářský řád' }],
+    locale: 'cs_CZ',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Rybářský řád – Ryby Semín',
+    description: 'Pravidla sportovního rybolovu chyť a pusť na rybníku Tomášek v Semíně.',
+    images: ['/og-home.jpg'],
+  },
 }
 
 const RuleRow = ({ children }: { children: React.ReactNode }) => (

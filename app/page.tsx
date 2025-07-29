@@ -7,6 +7,23 @@ export const metadata: Metadata = {
   title: 'Rezervace | Ryby Semín',
   description: 'Rezervujte si své lovné místo na vodní nádrži Tomášek v Semíně – online kalendář a přehled dostupných termínů pro sportovní rybolov.',
   keywords: ['Ryby Semín', 'rezervace', 'sportovní rybolov', 'rybník Tomášek', 'Semín'],
+  openGraph: {
+    title: 'Ryby Semín – sportovní rybolov',
+    description: 'Rezervujte si lovné místo na rybníku Tomášek. VIP chata, půjčovna vybavení a pravidelné rybářské závody.',
+    url: 'https://rybysemin.cz',
+    siteName: 'Ryby Semín',
+    images: [
+      { url: '/og-home.jpg', width: 1200, height: 630, alt: 'Rybář u rybníku Tomášek' }
+    ],
+    locale: 'cs_CZ',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Ryby Semín – sportovní rybolov',
+    description: 'Rezervujte si lovné místo na rybníku Tomášek. VIP chata, půjčovna vybavení a pravidelné závody.',
+    images: ['/og-home.jpg'],
+  },
 }
 
 export default function Home() {

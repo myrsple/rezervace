@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import React from 'react'
 import Navigation from '@/components/Navigation'
+import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -10,8 +11,9 @@ export const metadata: Metadata = {
   title: 'Ryby Semín - Rezervace lovných míst',
   description: 'Sportovní rybolov s občerstvením - rezervujte si své lovné místo online na rybníku Tomášek',
   icons: {
-    icon: '/icon.jpg', // Path in public/
+    icon: '/icon.jpg',
   },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({
@@ -35,6 +37,12 @@ export default function RootLayout({
           <Navigation />
           {children}
         </div>
+        {/* Umami Analytics */}
+        <Script
+          defer
+          src="https://cloud.umami.is/script.js"
+          data-website-id="8a304a41-92f1-4b6e-9b4d-f53c7efc2a84"
+        />
       </body>
     </html>
   )

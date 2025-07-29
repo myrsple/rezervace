@@ -8,6 +8,21 @@ export const metadata: Metadata = {
   title: 'Galerie | Ryby Semín',
   description: 'Fotogalerie úlovků, areálu a přírody kolem vodní nádrže Tomášek v Semíně.',
   keywords: ['Ryby Semín', 'fotogalerie', 'sportovní rybolov', 'Semín', 'rybník Tomášek'],
+  openGraph: {
+    title: 'Galerie – Ryby Semín',
+    description: 'Fotogalerie úlovků, areálu a přírody kolem vodní nádrže Tomášek v Semíně.',
+    url: 'https://rybysemin.cz/galerie',
+    siteName: 'Ryby Semín',
+    images: [{ url: '/og-home.jpg', width: 1200, height: 630, alt: 'Galerie Ryby Semín' }],
+    locale: 'cs_CZ',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Galerie – Ryby Semín',
+    description: 'Fotogalerie úlovků, areálu a přírody kolem vodní nádrže Tomášek v Semíně.',
+    images: ['/og-home.jpg'],
+  },
 }
 
 // Dynamically read all images placed in /public/galerie

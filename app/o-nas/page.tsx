@@ -6,7 +6,22 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'O nás | Ryby Semín',
   description: 'Příběh sportovního rybolovu Ryby Semín – historie rybníka Tomášek, zázemí a tým provozovatele.',
-  keywords: ['Ryby Semín', 'sportovní rybolov', 'o nás', 'rybník Tomášek', 'Semín', 'Přelouč'],
+  keywords: ['Ryby Semín', 'o nás', 'rybník Tomášek', 'sportovní rybolov'],
+  openGraph: {
+    title: 'O nás – Ryby Semín',
+    description: 'Poznejte tým a historii rybníku Tomášek v Semíně.',
+    url: 'https://rybysemin.cz/o-nas',
+    siteName: 'Ryby Semín',
+    images: [{ url: '/og-home.jpg', width: 1200, height: 630, alt: 'Rybník Tomášek' }],
+    locale: 'cs_CZ',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'O nás – Ryby Semín',
+    description: 'Poznejte tým a historii rybníku Tomášek v Semíně.',
+    images: ['/og-home.jpg'],
+  },
 }
 
 export default function AboutPage() {

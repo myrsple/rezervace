@@ -7,6 +7,21 @@ export const metadata: Metadata = {
   title: 'Ceník služeb | Ryby Semín',
   description: 'Aktuální ceny povolenek a služeb pro sportovní rybolov na rybníku Tomášek v Semíně.',
   keywords: ['Ryby Semín', 'ceník', 'povolenky', 'cena rybolov', 'rybník Tomášek', 'Semín'],
+  openGraph: {
+    title: 'Ceník služeb – Ryby Semín',
+    description: 'Aktuální ceny povolenek a půjčovného vybavení pro sportovní rybolov na rybníku Tomášek.',
+    url: 'https://rybysemin.cz/cenik-sluzeb',
+    siteName: 'Ryby Semín',
+    images: [{ url: '/og-home.jpg', width: 1200, height: 630, alt: 'Ceník Ryby Semín' }],
+    locale: 'cs_CZ',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Ceník služeb – Ryby Semín',
+    description: 'Aktuální ceny povolenek a půjčovného vybavení pro sportovní rybolov na rybníku Tomášek.',
+    images: ['/og-home.jpg'],
+  },
 }
 
 interface PriceItem {

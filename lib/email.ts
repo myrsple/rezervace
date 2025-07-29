@@ -44,12 +44,12 @@ async function getTransporter() {
   })
 
   try {
-    // Fail fast if credentials are wrong or host unreachable.
+    // Attempt verification; if it fails we log but continue to use the transporter.
     await transporter.verify()
     console.info('[email] SMTP connection verified')
   } catch (err) {
-    console.error('[email] SMTP verification failed – emails disabled', err)
-    return null
+    console.warn('[email] SMTP verification failed, will attempt to send anyway', err)
+    // Do NOT return null – continue with transporter; many SMTP hosts refuse EHLO verify but accept MAIL.
   }
 
   globalForEmail.mailTransporter = transporter

@@ -286,7 +286,8 @@ export async function sendReservationAdminNotification(reservation: any) {
     `Datum: ${dateRange}\n`+
     `Délka: ${duration}\n`+
     `Cena: ${totalPrice} Kč\n`+
-    (variableSymbol ? `VS: ${variableSymbol}\n` : '')
+    (variableSymbol ? `VS: ${variableSymbol}\n` : '')+
+    `\nSpravovat rezervace: https://rybysemin.cz/admin\n`
 
   await transporter.sendMail({
     from: process.env.SENDER_EMAIL || 'Ryby Semín <noreply@rybysemin.cz>',

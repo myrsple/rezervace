@@ -34,7 +34,7 @@ export default function AdminLoginForm() {
   }
 
   return (
-    <main className="min-h-screen pt-20 pb-16">
+    <main className="min-h-screen pt-10 pb-16">
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-sm mx-auto">
         <h1 className="text-2xl font-bold text-semin-blue mb-6 text-center">Přihlášení správce</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
